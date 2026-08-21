@@ -1,0 +1,22 @@
+# Applications reserved for the separate System Applications menu.
+# Format: desktop entry ID # short reason
+
+nm-connection-editor.desktop # advanced network maintenance
+blueman-manager.desktop # Bluetooth management
+org.gnome.baobab.desktop # storage diagnostics
+org.gnome.Logs.desktop # troubleshooting and log inspection
+org.gnome.seahorse.Application.desktop # credential and key management
+Qt-MaintenanceTool.desktop # Qt installation management
+thunar-volman-settings.desktop # removable-media configuration
+net.nokyan.Resources.desktop # system monitoring
+rofi-theme-selector.desktop # Rofi configuration
+update-manager.desktop # operating-system and software maintenance
+thunar-settings.desktop # file-manager configuration
+org.gnome.Sysprof.desktop # specialized performance profiling
+org.freedesktop.IBus.Setup.desktop # input-method configuration
+gnome-language-selector.desktop # operating-system language configuration
+desktop-security-center_desktop-security-center.desktop # security configuration
+org.gnome.DiskUtility.desktop # drive and partition management
+firmware-updater_firmware-updater.desktop # hardware firmware maintenance
+nvidia-settings.desktop # GPU and display diagnostics
+mpv.desktop # mpv Media Player — assigned to system applications

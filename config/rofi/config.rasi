@@ -1,0 +1,12 @@
+@import "current-theme.rasi"
+
+configuration {
+    modes: "drun";
+    show-icons: true;
+    matching: "normal";
+    case-smart: true;
+    disable-history: true;
+    drun-match-fields: "name,generic,keywords";
+    drun-display-format: "{name}\t<span weight='light' size='small'><i>{generic}</i></span>";
+    display-drun: ">_";
+}

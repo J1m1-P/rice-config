@@ -1,0 +1,80 @@
+@import "settings.rasi"
+
+* {
+    font: var(theme-font, "DejaVu Sans Mono 12");
+    text-color: var(primary-text, #e7edf7);
+}
+
+window {
+    width: var(window-width, 520px);
+    padding: var(window-padding, 14px);
+    border: var(border-width, 1px);
+    border-color: var(panel-border, #95aedb);
+    border-radius: var(window-radius, 11px);
+    background-color: var(window-bg, #080c12);
+}
+
+mainbox {
+    children: [ inputbar, listview ];
+    spacing: var(row-spacing, 4px);
+}
+
+inputbar {
+    children: [ prompt, entry ];
+    padding: var(input-padding, 8px);
+    border-radius: var(selected-radius, 6px);
+    background-color: var(input-bg, #0e1520);
+}
+
+prompt {
+    padding: 0px 8px 0px 2px;
+    text-color: var(accent, #95aedb);
+}
+
+entry {
+    placeholder: "";
+    text-color: var(primary-text, #e7edf7);
+}
+
+listview {
+    lines: var(visible-results, 8);
+    columns: 1;
+    spacing: var(row-spacing, 4px);
+    scrollbar: false;
+    fixed-height: true;
+    dynamic: false;
+}
+
+element {
+    padding: var(row-padding, 7px);
+    spacing: 10px;
+    border-radius: var(selected-radius, 6px);
+    background-color: transparent;
+}
+
+element normal.normal,
+element alternate.normal {
+    background-color: transparent;
+    text-color: var(primary-text, #e7edf7);
+}
+
+element-icon {
+    size: var(icon-size, 21px);
+    vertical-align: 0.5;
+    background-color: inherit;
+}
+
+element-text {
+    vertical-align: 0.5;
+    horizontal-align: 0.0;
+    /* Rofi 2.0 does not resolve variables inside tab-stop arrays. */
+    tab-stops: [ 300px ];
+    text-color: var(primary-text, #e7edf7);
+    background-color: inherit;
+}
+
+element selected {
+    border: var(selected-border-width, 1px);
+    border-color: var(selected-border, #95aedb);
+    background-color: var(selected-bg, #1c2a41);
+}

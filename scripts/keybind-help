@@ -1,0 +1,300 @@
+#!/usr/bin/env bash
+
+# Searchable keybinding reference: collect -> categorize -> format -> Rofi.
+set -u
+
+# Rofi calls this branch for in-window navigation. ROFI_DATA carries the
+# current screen, so changing categories does not close or recreate the window.
+if [[ "${1:-}" == --rofi-mode ]]; then
+    state="${ROFI_DATA:-categories}"
+    event="${ROFI_RETV:-0}"
+    selected="${2:-}"
+    keep=false
+
+    if ((event == 1)); then
+        if [[ "$state" == categories ]]; then
+            case "$selected" in General|Windows|Kitty|System) state="$selected";; esac
+        else
+            keep=true  # Enter/Right on a binding intentionally does nothing.
+        fi
+    elif ((event == 10)); then
+        if [[ "$state" == categories ]]; then keep=true; else state=categories; fi
+    fi
+
+    printf '\0data\x1f%s\n' "$state"
+    printf '\0prompt\x1f>\n'
+    printf '\0message\x1fEnter select    ← back    Esc close\n'
+    printf '\0no-custom\x1ftrue\n'
+    printf '\0use-hot-keys\x1ftrue\n'
+    if [[ "$keep" == true ]]; then
+        printf '\0keep-filter\x1ftrue\n'
+        printf '\0keep-selection\x1ftrue\n'
+    fi
+
+    if [[ "$state" == categories ]]; then
+        printf '%s\n' General Windows Kitty System
+    else
+        awk -F '\t' -v category="$state" '$1==category { printf "%-28s\t%s\n", $2, $3 }' "${KEYBIND_HELP_CACHE:?}"
+    fi
+    exit
+fi
+
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+hypr_config="$config_home/hypr/hyprland.conf"
+kitty_config="${KITTY_CONFIG_DIRECTORY:-$config_home/kitty}/kitty.conf"
+theme="$config_home/hypr/keybind-help.rasi"
+tmp="$(mktemp -d)" || exit 1
+raw="$tmp/bindings"
+list="$tmp/list"
+trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+
+# Easy-to-edit category rules. First matching rule wins.
+category_for() {
+    local source="$1" action="${2,,}" text="${3,,}"
+    [[ "$source" == kitty ]] && { printf Kitty; return; }
+    case "$text" in
+        *notification*|*swaync*|*screenshot*|*hyprshot*|*volume*|*brightness*|*audio*|*track*|*playerctl*) printf System ;;
+        *) case "$action" in
+            killactive|movefocus|movewindow|resizewindow|mouse|togglefloating|pseudo|togglesplit|fullscreen) printf Windows ;;
+            *) printf General ;;
+        esac ;;
+    esac
+}
+
+trim() {
+    local s="$1"
+    s="${s#"${s%%[![:space:]]*}"}"
+    s="${s%"${s##*[![:space:]]}"}"
+    printf %s "$s"
+}
+
+mods_from_mask() {
+    local n="${1:-0}" out=""
+    [[ "$n" =~ ^[0-9]+$ ]] || n=0
+    ((n & 64)) && out=Super
+    ((n & 4))  && out+="${out:+ + }Ctrl"
+    ((n & 1))  && out+="${out:+ + }Shift"
+    ((n & 8))  && out+="${out:+ + }Alt"
+    printf %s "$out"
+}
+
+pretty_mods() {
+    local s=" ${1//+/ } " out="" word
+    s="${s//\$mainMod/SUPER}"
+    s="${s//CONTROL/CTRL}"
+    for word in SUPER CTRL SHIFT ALT; do
+        [[ " ${s^^} " == *" $word "* ]] || continue
+        [[ -n "$out" ]] && out+=" + "
+        case "$word" in SUPER) out+=Super;; CTRL) out+=Ctrl;; SHIFT) out+=Shift;; ALT) out+=Alt;; esac
+    done
+    printf %s "$out"
+}
+
+pretty_key() {
+    case "${1,,}" in
+        mouse:272) printf Mouse1;; mouse:273) printf Mouse2;;
+        mouse_down) printf 'Scroll Down';; mouse_up) printf 'Scroll Up';;
+        left) printf Left;; right) printf Right;; up) printf Up;; down) printf Down;;
+        print) printf Print;; *) printf %s "$1";;
+    esac
+}
+
+describe_hypr() {
+    local action="${1,,}" arg="$2"
+    case "$action" in
+        exec) case "$arg" in
+            *keybind-help*) printf 'Show keybinding help';;
+            *kitty*) printf 'Open terminal (Kitty)';;
+            *thunar*) printf 'Open file manager';;
+            *loginctl*lock-session*) printf 'Lock screen';;
+            *rofi*-show\ drun*) printf 'Open application launcher';;
+            *) printf 'Run: %s' "$arg";;
+        esac;;
+        killactive) printf 'Close active window';;
+        exit) printf 'Exit Hyprland';;
+        togglefloating) printf 'Toggle floating/tiled';;
+        fullscreen) printf 'Toggle fullscreen';;
+        pseudo) printf 'Toggle pseudotiling';;
+        togglesplit) printf 'Toggle split direction';;
+        movefocus) case "$arg" in l) printf 'Focus left';; r) printf 'Focus right';; u) printf 'Focus up';; d) printf 'Focus down';; esac;;
+        workspace) case "$arg" in e+1) printf 'Next workspace';; e-1) printf 'Previous workspace';; *) printf 'Switch to workspace %s' "$arg";; esac;;
+        movetoworkspace) printf 'Move active window to workspace %s' "$arg";;
+        movewindow) printf 'Move window';; resizewindow) printf 'Resize window';;
+        mouse) case "$arg" in movewindow) printf 'Move window';; resizewindow) printf 'Resize window';; *) printf 'Mouse action: %s' "$arg";; esac;;
+        *) printf '%s%s' "$action" "${arg:+: $arg}";;
+    esac
+}
+
+add() {
+    local source="$1" mods="$2" key="$3" description="$4" action="$5" shown category
+    shown="$(pretty_key "$key")"
+    [[ -n "$mods" ]] && shown="$mods + $shown"
+    category="$(category_for "$source" "$action" "$description $6")"
+    printf '%s\t%s\t%s\n' "$category" "$shown" "$description" >> "$raw"
+}
+
+collect_hypr_runtime() {
+    command -v hyprctl >/dev/null && command -v jq >/dev/null || return 1
+    local json mask key description action arg mods
+    json="$(hyprctl -j binds 2>/dev/null)" || return 1
+    [[ "$json" == \[* ]] || return 1
+    while IFS=$'\x1f' read -r mask key description action arg; do
+        [[ -n "$key" ]] || continue
+        mods="$(mods_from_mask "$mask")"
+        [[ -n "$description" ]] || description="$(describe_hypr "$action" "$arg")"
+        add hypr "$mods" "$key" "$description" "$action" "$arg"
+    done < <(printf %s "$json" | jq -r '.[] | [.modmask, (.key // ""), (.description // ""), (.dispatcher // ""), (.arg // "")] | join("\u001f")')
+    [[ -s "$raw" ]]
+}
+
+declare -A seen_hypr=()
+collect_hypr_file() {
+    local file="${1/#\~/$HOME}" line source type rest mods key description action arg
+    [[ -r "$file" ]] || return
+    file="$(readlink -f "$file")"
+    [[ -z "${seen_hypr[$file]:-}" ]] || return
+    seen_hypr[$file]=1
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="$(trim "${line%%#*}")"; [[ -n "$line" ]] || continue
+        if [[ "$line" =~ ^source[[:space:]]*=[[:space:]]*(.+)$ ]]; then
+            source="$(trim "${BASH_REMATCH[1]}")"
+            source="${source/#\~/$HOME}"; source="${source//\$HOME/$HOME}"
+            [[ "$source" = /* ]] || source="$(dirname "$file")/$source"
+            collect_hypr_file "$source"; continue
+        fi
+        [[ "$line" =~ ^(bind[a-z]*)[[:space:]]*=[[:space:]]*(.*)$ ]] || continue
+        type="${BASH_REMATCH[1]}"; rest="${BASH_REMATCH[2]}"
+        if [[ "$type" == bindd* ]]; then
+            IFS=, read -r mods key description action arg <<< "$rest"; description="$(trim "$description")"
+        else
+            IFS=, read -r mods key action arg <<< "$rest"; description=""
+        fi
+        mods="$(pretty_mods "$(trim "$mods")")"; key="$(trim "$key")"
+        action="$(trim "$action")"; arg="$(trim "${arg:-}")"
+        [[ -n "$description" ]] || description="$(describe_hypr "$action" "$arg")"
+        add hypr "$mods" "$key" "$description" "$action" "$arg"
+    done < "$file"
+}
+
+describe_kitty() {
+    case "$1" in
+        new_tab*) printf 'New tab';; close_tab*) printf 'Close tab';;
+        next_tab*) printf 'Next tab';; previous_tab*) printf 'Previous tab';;
+        combine\ :\ new_tab_with_cwd\ :\ set_tab_title*) printf 'New tab (same directory)';;
+        new_window*) printf 'New pane (same directory)';; close_window*) printf 'Close pane';;
+        load_config_file*) printf 'Reload kitty.conf';;
+        *) printf '%s' "${1//_/ }";;
+    esac
+}
+
+declare -A seen_kitty=()
+collect_kitty_file() {
+    local file="${1/#\~/$HOME}" line include shortcut action key mods
+    [[ -r "$file" ]] || return
+    file="$(readlink -f "$file")"
+    [[ -z "${seen_kitty[$file]:-}" ]] || return
+    seen_kitty[$file]=1
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="$(trim "${line%%#*}")"; [[ -n "$line" ]] || continue
+        if [[ "$line" =~ ^include[[:space:]]+(.+)$ ]]; then
+            include="$(trim "${BASH_REMATCH[1]}")"
+            [[ "$include" = /* ]] || include="$(dirname "$file")/$include"
+            collect_kitty_file "$include"; continue
+        fi
+        [[ "$line" =~ ^map[[:space:]]+([^[:space:]]+)[[:space:]]+(.+)$ ]] || continue
+        shortcut="${BASH_REMATCH[1]}"; action="${BASH_REMATCH[2]}"
+        key="${shortcut##*+}"; mods="${shortcut%+*}"
+        [[ "$mods" == "$shortcut" ]] && mods=""
+        add kitty "$(pretty_mods "$mods")" "${key^^}" "$(describe_kitty "$action")" "$action" ""
+    done < "$file"
+}
+
+: > "$raw"
+collect_hypr_runtime || { : > "$raw"; collect_hypr_file "$hypr_config"; }
+collect_kitty_file "$kitty_config"
+
+# Small, verified subset of Kitty 0.45 defaults (not a default-key dump).
+add kitty 'Ctrl + Shift' T 'New tab (same directory)' curated ''
+add kitty 'Ctrl + Shift' Q 'Close tab' curated ''
+add kitty 'Ctrl + Shift' ENTER 'New pane (same directory)' curated ''
+add kitty 'Ctrl + Shift' Right 'Next tab' curated ''
+add kitty 'Ctrl + Shift' Left 'Previous tab' curated ''
+add kitty 'Ctrl + Shift + Alt' T 'Set tab title' curated ''
+add kitty 'Ctrl + Shift' '[' 'Previous pane' curated ''
+add kitty 'Ctrl + Shift' ']' 'Next pane' curated ''
+add kitty 'Ctrl + Shift' W 'Close pane' curated ''
+add kitty 'Ctrl + Shift' R 'Resize panes' curated ''
+add kitty 'Ctrl + Shift' L 'Cycle layout' curated ''
+add kitty 'Ctrl + Shift' H 'Open scrollback pager' curated ''
+add kitty 'Ctrl + Shift' '/' 'Search scrollback' curated ''
+add kitty 'Ctrl + Shift' Z 'Previous shell prompt' curated ''
+add kitty 'Ctrl + Shift' X 'Next shell prompt' curated ''
+add kitty 'Ctrl + Shift' G 'Show last command output' curated ''
+add kitty 'Ctrl + Shift' C 'Copy' curated ''
+add kitty 'Ctrl + Shift' V 'Paste' curated ''
+add kitty 'Ctrl + Shift' S 'Paste primary selection' curated ''
+add kitty 'Ctrl + Shift' E 'Open URL hint' curated ''
+add kitty 'Ctrl + Shift' 'P, F' 'Select path hint' curated ''
+add kitty 'Ctrl + Shift' F5 'Reload Kitty config' curated ''
+add kitty 'Ctrl + Shift' F6 'Show effective config' curated ''
+add kitty 'Ctrl + Shift' F1 'Open Kitty documentation/help' curated ''
+add kitty 'Ctrl + Shift' Escape 'Open Kitty control shell' curated ''
+
+# Condense the two repetitive 1–9 workspace families, then sort and deduplicate.
+awk -F '\t' 'BEGIN { OFS="\t" }
+    $1=="General" && $2 ~ /^Super \+ [1-9]$/ && $3 ~ /^Switch to workspace [1-9]$/ { switch_family=1; next }
+    $1=="General" && $2 ~ /^Super \+ Shift \+ [1-9]$/ && $3 ~ /^Move active window to workspace [1-9]$/ { move_family=1; next }
+    { print }
+    END {
+        if (switch_family) print "General", "Super + 1–9", "Switch workspace 1–9"
+        if (move_family) print "General", "Super + Shift + 1–9", "Move window to workspace 1–9"
+    }' "$raw" | LC_ALL=C sort -t $'\t' -k1,1 -k2,2 -u > "$list"
+
+if [[ "${1:-}" == --print ]]; then
+    awk -F '\t' '{ printf "%-9s  %-28s  %s\n", $1, $2, $3 }' "$list"
+    exit
+fi
+
+command -v rofi >/dev/null || { printf 'keybind-help: rofi is not installed\n' >&2; exit 1; }
+
+clean_stale_rofi_lock() {
+    local lock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/rofi.pid" pid state
+    [[ -r "$lock" ]] || return
+    read -r pid < "$lock"
+    if [[ "$pid" =~ ^[0-9]+$ && -r "/proc/$pid/stat" ]]; then
+        read -r _ _ state _ < "/proc/$pid/stat"
+        [[ "$state" != Z ]] && return
+    fi
+    rm -f -- "$lock"
+}
+
+viewer_running() {
+    local pid state
+    while read -r pid; do
+        [[ -r "/proc/$pid/stat" ]] || continue
+        read -r _ _ state _ < "/proc/$pid/stat"
+        [[ "$state" != Z ]] && return 0
+    done < <(pgrep -f '^rofi .* -name keybind-help( |$)')
+    return 1
+}
+
+# Super+F1 toggles only this viewer, not other Rofi windows.
+clean_stale_rofi_lock
+if viewer_running; then
+    pkill -f '^rofi .* -name keybind-help( |$)'
+    for _ in {1..20}; do
+        viewer_running || break
+        sleep 0.05
+    done
+    clean_stale_rofi_lock
+    exit
+fi
+
+export KEYBIND_HELP_CACHE="$list"
+mode="keybind-help:${BASH_SOURCE[0]} --rofi-mode"
+rofi_args=(-no-config -show keybind-help -modes "$mode" -i -matching fuzzy -click-to-exit
+           -name keybind-help -theme "$theme" -window-title 'Keybindings'
+           -kb-accept-entry 'Return,KP_Enter,Right' -kb-custom-1 'Left'
+           -kb-move-char-back 'Control+b' -kb-move-char-forward 'Control+f'
+           -kb-remove-char-back 'BackSpace,Shift+BackSpace,Control+h')
+rofi "${rofi_args[@]}"

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+# U+2063 is invisible and keeps this gateway after ordinary app names in Rofi.
+Name=⁣Hidden Applications
+GenericName=Manage hidden applications
+Comment=Add, remove, or launch hidden applications
+Exec=/home/j1m1/.config/rofi/scripts/hidden-apps.sh
+Icon=view-conceal-symbolic
+Terminal=false
+Categories=Settings;

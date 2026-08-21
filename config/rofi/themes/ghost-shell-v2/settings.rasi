@@ -1,0 +1,29 @@
+/* Ghost Shell v2 — edit this file to customize the theme. */
+* {
+    /* GEOMETRY */
+    window-width: 520px;
+    window-radius: 11px;
+    selected-radius: 6px;
+    border-width: 1px;
+    selected-border-width: 1px;
+    visible-results: 8;
+    icon-size: 21px;
+
+    /* TYPOGRAPHY */
+    theme-font: "DejaVu Sans Mono 12";
+
+    /* COLORS */
+    accent: #95aedb;
+    primary-text: #e7edf7;
+    window-bg: rgba(8, 12, 18, 0.78);
+    panel-border: rgba(149, 174, 219, 0.42);
+    selected-bg: rgba(28, 42, 65, 0.72);
+    selected-border: #95aedb;
+    input-bg: rgba(14, 21, 32, 0.72);
+
+    /* SPACING */
+    window-padding: 14px;
+    input-padding: 8px;
+    row-padding: 7px;
+    row-spacing: 4px;
+}

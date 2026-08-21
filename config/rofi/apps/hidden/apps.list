@@ -1,0 +1,17 @@
+# Applications intentionally omitted from normal and System menus.
+# Entries already suppressed by their own metadata do not belong here.
+# Format: desktop entry ID # short reason
+
+org.gnome.Characters.desktop # rarely needed as a dedicated launcher entry
+org.gnome.clocks.desktop # time is already available in Waybar
+rofi.desktop # Rofi is opened through a Hyprland keybind
+info.desktop # console documentation viewer
+org.gnome.TextEditor.desktop # redundant with VS Code and terminal editors
+snap-store_snap-store.desktop # not part of the chosen package-management workflow
+thunar-bulk-rename.desktop # helper functionality available through Thunar
+org.gnome.Papers.desktop # normally opened through document files
+org.gnome.Nautilus.desktop # duplicate file manager; Thunar is preferred
+org.gnome.font-viewer.desktop # normally opened through font files
+org.gnome.Loupe.desktop # normally opened through image files
+steam.desktop # unwanted launcher entry
+org.gnome.Ptyxis.desktop # duplicate terminal; Kitty is preferred

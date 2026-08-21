@@ -1,0 +1,24 @@
+/* Copy this directory, then edit these values. */
+* {
+    /* GEOMETRY */
+    window-width: 520px;
+    window-radius: 10px;
+    border-width: 1px;
+    visible-results: 8;
+    icon-size: 21px;
+
+    /* TYPOGRAPHY */
+    theme-font: "DejaVu Sans Mono 12";
+
+    /* COLORS */
+    text: #eeeeee;
+    window-bg: rgba(0, 0, 0, 0.82);
+    panel-border: rgba(255, 255, 255, 0.25);
+    selected-bg: rgba(255, 255, 255, 0.10);
+
+    /* SPACING */
+    window-padding: 12px;
+    input-padding: 8px;
+    row-padding: 7px;
+    row-spacing: 4px;
+}

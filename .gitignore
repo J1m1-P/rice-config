@@ -1,0 +1,16 @@
+# Local agent/editor metadata
+.codex/
+.agents/
+**/.git/
+
+# Runtime and temporary files
+.current-theme.conf.*
+.rofi-group.*
+*.tmp
+*.temp
+
+# Generated or backup state
+APPLICATIONS.md
+*.backup-*
+**/backups/
+**/paths/
