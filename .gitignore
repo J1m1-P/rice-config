@@ -4,13 +4,17 @@
 **/.git/
 
 # Runtime and temporary files
-.current-theme.conf.*
+.kitty-theme-check.*
+.local-theme.conf.*
+.local-theme.rasi.*
 .rofi-group.*
 *.tmp
 *.temp
 
-# Generated or backup state
+# Local theme selections
+config/kitty/local-theme.conf
+config/rofi/local-theme.rasi
+
+# Generated reports
 APPLICATIONS.md
 *.backup-*
-**/backups/
-**/paths/

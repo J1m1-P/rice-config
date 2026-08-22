@@ -17,6 +17,7 @@ window {
 mainbox {
     children: [ inputbar, listview ];
     spacing: var(row-spacing, 4px);
+    background-color: transparent;
 }
 
 inputbar {
@@ -29,11 +30,13 @@ inputbar {
 prompt {
     padding: 0px 8px 0px 2px;
     text-color: var(accent, #95aedb);
+    background-color: transparent;
 }
 
 entry {
     placeholder: "";
     text-color: var(primary-text, #e7edf7);
+    background-color: transparent;
 }
 
 listview {
@@ -43,6 +46,7 @@ listview {
     scrollbar: false;
     fixed-height: true;
     dynamic: false;
+    background-color: transparent;
 }
 
 element {

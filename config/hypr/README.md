@@ -116,3 +116,4 @@ At the start of a new Hyprland session, the configuration launches:
 - Sway Notification Center.
 - Automatic idle, lock, display, and suspend handling.
 - The password prompt used when an application needs administrator permission.
+- The SwayOSD server used by media, volume, and brightness keys.

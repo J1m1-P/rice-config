@@ -10,7 +10,7 @@ Edit `themes/my-new-theme/settings.rasi` and `themes/my-new-theme/theme.rasi`.
 Activate it with:
 
 ```bash
-~/.config/rofi/scripts/use-theme.sh my-new-theme
+rofi-theme my-new-theme
 ```
 
 Keep reusable values in `settings.rasi` and layout/widget rules in

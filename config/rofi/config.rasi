@@ -1,4 +1,4 @@
-@import "current-theme.rasi"
+@import "local-theme.rasi"
 
 configuration {
     modes: "drun";

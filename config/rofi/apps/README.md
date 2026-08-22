@@ -14,8 +14,8 @@ same-ID user overrides in `~/.local/share/applications/`.
 After editing either list manually, apply it with:
 
 ```bash
-~/.config/rofi/scripts/hidden-apps.sh sync
-~/.config/rofi/scripts/system-apps.sh sync
+rofi-apps hidden sync
+rofi-apps system sync
 ```
 
 The Hidden Applications and System Applications menus update their respective
@@ -23,6 +23,7 @@ list and matching user overrides automatically. SYSTEM applications are hidden
 from the normal `drun` results but remain launchable from the System Applications
 menu.
 
-Runtime backup/restore state lives under `apps/.hidden-apps/` and
-`apps/.system-apps/`. The two gateway desktop entries use an invisible U+2063
-sort prefix so they remain at the bottom of Rofi's otherwise alphabetical list.
+Runtime backup/restore state lives under
+`${XDG_STATE_HOME:-~/.local/state}/rice-config/rofi/`, outside this repository.
+The two gateway desktop entries use an invisible U+2063 sort prefix so they
+remain at the bottom of Rofi's otherwise alphabetical list.

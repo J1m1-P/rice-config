@@ -4,6 +4,7 @@ set -euo pipefail
 rofi_dir="${XDG_CONFIG_HOME:-$HOME/.config}/rofi"
 user_data="${XDG_DATA_HOME:-$HOME/.local/share}"
 user_apps="$user_data/applications"
+state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
 app_group="${ROFI_APP_GROUP:-hidden}"
 
 case "$app_group" in
@@ -23,7 +24,8 @@ case "$app_group" in
         ;;
 esac
 
-state_dir="$rofi_dir/apps/.$app_group-apps"
+state_root="$state_home/rice-config/rofi"
+state_dir="$state_root/$app_group"
 hidden_list="$rofi_dir/apps/$app_group/apps.list"
 
 list_ids() {
@@ -81,7 +83,7 @@ find_original() {
                 printf '%s\n' "$file"
                 return 0
             fi
-        done < <(find "$app_dir" -type f -name '*.desktop' -print0)
+        done < <(find "$app_dir" \( -type f -o -type l \) -name '*.desktop' -print0)
     done
     return 1
 }
@@ -106,7 +108,7 @@ list_visible() {
             name="$(desktop_value Name "$file")"
             icon="$(desktop_value Icon "$file")"
             [[ -n "$name" ]] && printf '%s\t%s\t%s\t%s\n' "$name" "$id" "$file" "${icon:-application-x-executable}"
-        done < <(find "$app_dir" -type f -name '*.desktop' -print0)
+        done < <(find "$app_dir" \( -type f -o -type l \) -name '*.desktop' -print0)
     done
 }
 
@@ -207,6 +209,10 @@ restore_override() {
 
     [[ -f "$override" ]] || return 0
     grep -Eq '^(Hidden|X-Rofi-Hidden)=true$' "$override" || return 0
+    if [[ -f "$path_file" && ! -f "$backup" ]]; then
+        printf 'Cannot restore %s: recovery backup is missing: %s\n' "$id" "$backup" >&2
+        return 1
+    fi
     rm -- "$override"
     if [[ -f "$backup" && -f "$path_file" ]]; then
         original="$(<"$path_file")"
