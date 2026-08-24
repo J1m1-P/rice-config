@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+# Avoid Waybar/WirePlumber's no-source crash and sink fallback.
+set -u
+
+source=$(pw-dump 2>/dev/null | jq -r '
+    . as $objects
+    | ([.[] | select(.type == "PipeWire:Interface:Metadata" and .props["metadata.name"] == "default")
+        | .metadata[]? | select(.key == "default.audio.source") | .value.name] | first) as $name
+    | .[] | select(.type == "PipeWire:Interface:Node"
+        and .info.props["media.class"] == "Audio/Source"
+        and .info.props["node.name"] == $name)
+    | [.id, (.info.props["node.description"] // .info.props["node.nick"] // .info.props["node.name"])] | @tsv
+' 2>/dev/null) || source=
+IFS=$'\t' read -r source_id source_name <<< "$source"
+if [[ ! "$source_id" =~ ^[0-9]+$ ]]; then
+    [[ "${1-}" == toggle ]] && exit 0
+    jq -cn '{text: "󰍮", tooltip: "MICROPHONE\n\nNo input source is currently available", class: "unavailable"}'
+    exit 0
+fi
+
+if [[ "${1-}" == toggle ]]; then
+    wpctl set-mute "$source_id" toggle >/dev/null 2>&1
+    exit
+fi
+
+state=$(wpctl get-volume "$source_id" 2>/dev/null) || exit 0
+volume=$(awk '{printf "%.0f", $2 * 100}' <<< "$state")
+if [[ "$state" == *MUTED* ]]; then
+    class=muted
+    icon=󰍭
+    label=Muted
+else
+    class=active
+    icon=󰍬
+    label=Active
+fi
+jq -cn --arg text "$icon" --arg tooltip "MICROPHONE
+
+$source_name
+Input: $volume%
+$label" --arg class "$class" '{text: $text, tooltip: $tooltip, class: $class}'

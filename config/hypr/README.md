@@ -17,6 +17,7 @@ This configuration provides a keyboard-focused, tiled desktop with ten workspace
 | `Super` + `V` | Switch the active window between tiled and floating. |
 | `Super` + `P` | Toggle pseudo-tiling for the active window. This lets an application keep its preferred size while remaining in the tiled layout. |
 | `Super` + `J` | Change whether the next tiled window is placed beside or below the active window. |
+| `Super` + `B` | Show or hide Waybar. |
 
 ## Moving around windows
 

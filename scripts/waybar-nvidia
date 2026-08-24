@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Waybar lacks this sysfs state; reading it does not wake the NVIDIA GPU.
+shopt -s nullglob
+states=(/sys/bus/pci/drivers/nvidia/*/power/runtime_status)
+
+if (( ${#states[@]} == 0 )); then
+    printf '{"text":"GPU UNAVAILABLE","tooltip":"NVIDIA GPU or driver unavailable","class":"unavailable"}\n'
+    exit 0
+fi
+
+runtime=$(<"${states[0]}")
+case "$runtime" in
+    suspended) printf '{"text":"GPU ASLEEP","tooltip":"NVIDIA GPU runtime suspended","class":"asleep"}\n' ;;
+    active|resuming) printf '{"text":"GPU ACTIVE","tooltip":"NVIDIA GPU runtime active","class":"active"}\n' ;;
+    *) printf '{"text":"GPU UNAVAILABLE","tooltip":"NVIDIA runtime state unavailable","class":"unavailable"}\n' ;;
+esac

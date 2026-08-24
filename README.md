@@ -9,10 +9,11 @@ the programs themselves are installed separately.
 - `config/hypr/` — Hyprland, idle, lock, and keybind configuration.
 - `config/kitty/` — Kitty behavior, appearance, themes, and tracked default.
 - `config/rofi/` — Rofi behavior, themes, application policy, and app-specific helpers.
+- `config/waybar/` — Waybar layout, logical module groups, and themes.
 - `scripts/` — general helpers deployed through `~/.local/bin/`.
 - `setup.sh` — conservative, idempotent symlink deployment and validation.
 
-The live `~/.config/hypr`, `~/.config/kitty`, and `~/.config/rofi`
+The live `~/.config/hypr`, `~/.config/kitty`, `~/.config/rofi`, and `~/.config/waybar`
 directories are symlinks into the clone. Managed commands and the two Rofi
 gateway desktop entries are individual symlinks. From the clone root, run:
 
@@ -37,6 +38,10 @@ kitty-theme default
 rofi-theme list
 rofi-theme ghost-v2
 rofi-theme default
+
+waybar-theme list
+waybar-theme ghost-shell
+waybar-theme default
 ```
 
 The `default` command activates the tracked default. To select Kitty's theme
@@ -65,6 +70,8 @@ differ.
 - Configured features: `brightnessctl`, `playerctl` support through SwayOSD,
   Thunar, JetBrains Mono, DejaVu Sans Mono, and an icon theme providing common
   symbolic icons.
+- Waybar controls: `wlctl`, NetworkManager's `nmtui`, `bluetui`, `wiremix`,
+  WirePlumber's `pw-dump` and `wpctl`, Power Profiles Daemon, and `wlogout`.
 - Screenshots: Hyprshot, `grim`, `slurp`, `jq`, `wl-copy`, `notify-send`, and
   `xdg-user-dir`. `hyprpicker` is optional for Hyprshot's freeze mode.
 

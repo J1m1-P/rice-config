@@ -53,7 +53,7 @@ category_for() {
     local source="$1" action="${2,,}" text="${3,,}"
     [[ "$source" == kitty ]] && { printf Kitty; return; }
     case "$text" in
-        *notification*|*swaync*|*screenshot*|*hyprshot*|*volume*|*brightness*|*audio*|*track*|*playerctl*) printf System ;;
+        *notification*|*swaync*|*screenshot*|*hyprshot*|*volume*|*brightness*|*audio*|*microphone*|*track*|*playerctl*) printf System ;;
         *) case "$action" in
             killactive|movefocus|movewindow|resizewindow|mouse|togglefloating|pseudo|togglesplit|fullscreen) printf Windows ;;
             *) printf General ;;

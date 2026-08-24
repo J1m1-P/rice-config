@@ -66,6 +66,19 @@ initialize_rofi_theme() {
     ok "initialized Rofi theme: $name"
 }
 
+initialize_waybar_theme() {
+    local app_dir="$config_home/waybar" selector="$config_home/waybar/local-theme.css"
+    local name temp
+    [[ "$(readlink -f -- "$app_dir" 2>/dev/null)" == "$repo_dir/config/waybar" ]] || return
+    [[ -e "$selector" || -L "$selector" ]] && { ok "Waybar local theme already initialized"; return; }
+    name="$(read_default "$app_dir" Waybar)" || return
+    [[ -f "$app_dir/themes/$name.css" ]] || { fail "missing Waybar default theme: $name"; return; }
+    temp=$(mktemp "$app_dir/.local-theme.css.XXXXXX") || { fail 'could not create Waybar selector'; return; }
+    printf '@import url("themes/%s.css");\n' "$name" > "$temp"
+    mv -- "$temp" "$selector"
+    ok "initialized Waybar theme: $name"
+}
+
 check_command() {
     local command_name="$1" feature="$2"
     if command -v "$command_name" >/dev/null 2>&1; then
@@ -81,10 +94,14 @@ printf 'Deploying rice-config from %s\n\n' "$repo_dir"
 ensure_link "$repo_dir/config/hypr" "$config_home/hypr"
 ensure_link "$repo_dir/config/kitty" "$config_home/kitty"
 ensure_link "$repo_dir/config/rofi" "$config_home/rofi"
+ensure_link "$repo_dir/config/waybar" "$config_home/waybar"
 
 ensure_link "$repo_dir/scripts/keybind-help" "$bin_dir/keybind-help"
 ensure_link "$repo_dir/scripts/kitty-theme.sh" "$bin_dir/kitty-theme"
 ensure_link "$repo_dir/scripts/rofi-theme.sh" "$bin_dir/rofi-theme"
+ensure_link "$repo_dir/scripts/waybar-nvidia" "$bin_dir/waybar-nvidia"
+ensure_link "$repo_dir/scripts/waybar-microphone" "$bin_dir/waybar-microphone"
+ensure_link "$repo_dir/scripts/waybar-theme.sh" "$bin_dir/waybar-theme"
 ensure_link "$repo_dir/scripts/rofi-apps" "$bin_dir/rofi-apps"
 
 ensure_link "$repo_dir/config/rofi/hidden-applications.desktop" \
@@ -94,6 +111,7 @@ ensure_link "$repo_dir/config/rofi/system-applications.desktop" \
 
 initialize_kitty_theme
 initialize_rofi_theme
+initialize_waybar_theme
 
 if [[ "$(readlink -f -- "$config_home/rofi" 2>/dev/null)" == "$repo_dir/config/rofi" ]]; then
     "$config_home/rofi/scripts/hidden-apps.sh" sync || fail 'could not synchronize Hidden applications'
@@ -105,6 +123,9 @@ for item in \
     'Hyprland:desktop compositor' 'hyprctl:Hyprland control' 'kitty:terminal' \
     'rofi:application launcher' 'hypridle:idle handling' 'hyprlock:screen locking' \
     'waybar:desktop panel' 'swaync:notification daemon' 'swaync-client:notification controls' \
+    'wlctl:Wi-Fi control' 'nmtui:Ethernet control' 'bluetui:Bluetooth control' \
+    'wiremix:audio control' 'pw-dump:microphone state' 'wpctl:audio mute control' \
+    'powerprofilesctl:power profile control' 'wlogout:power menu' \
     'swayosd-server:on-screen display' 'swayosd-client:media and hardware keys' \
     'playerctl:media control' 'brightnessctl:brightness control' 'thunar:file manager' 'jq:JSON processing' \
     'gio:desktop-entry launching' 'hyprshot:screenshots (external)' 'grim:screenshot capture' \
@@ -167,6 +188,35 @@ if command -v rofi >/dev/null 2>&1 && [[ -r "$config_home/rofi/config.rasi" ]]; 
         ok 'Rofi configuration'
     else
         fail 'Rofi configuration validation failed'
+    fi
+fi
+if [[ -r "$config_home/waybar/config.jsonc" ]] &&
+   [[ "$(readlink -f -- "$config_home/waybar" 2>/dev/null)" == "$repo_dir/config/waybar" ]]; then
+    waybar_json_valid=true
+    if command -v json5 >/dev/null 2>&1; then
+        for waybar_json in "$config_home/waybar/config.jsonc" "$config_home/waybar/modules/"*.jsonc; do
+            json5 --validate "$waybar_json" >/dev/null 2>&1 || waybar_json_valid=false
+        done
+    elif command -v jq >/dev/null 2>&1; then
+        jq empty "$config_home/waybar/config.jsonc" "$config_home/waybar/modules/"*.jsonc || waybar_json_valid=false
+    else
+        waybar_json_valid=false
+    fi
+    if "$waybar_json_valid"; then
+        ok 'Waybar JSONC configuration'
+    else
+        fail 'Waybar JSONC configuration validation failed'
+    fi
+
+    if command -v python3 >/dev/null 2>&1 &&
+       python3 -c 'import gi; gi.require_version("Gtk", "3.0"); from gi.repository import Gtk' >/dev/null 2>&1; then
+        if python3 -c 'import gi, sys; gi.require_version("Gtk", "3.0"); from gi.repository import Gtk; provider = Gtk.CssProvider(); provider.load_from_path(sys.argv[1])' "$config_home/waybar/style.css"; then
+            ok 'Waybar GTK3 stylesheet'
+        else
+            fail 'Waybar GTK3 stylesheet validation failed'
+        fi
+    else
+        fail 'cannot validate Waybar GTK3 stylesheet: Python GObject GTK3 bindings unavailable'
     fi
 fi
 printf '\n'
