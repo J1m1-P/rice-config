@@ -1,4 +1,4 @@
-# Ghost v2 — Signal Grid
+# Ghost Shell — Signal Grid
 
 Edit `settings.rasi` for normal customization:
 

@@ -3,5 +3,5 @@
     "layer": "top", "position": "top", "height": 30, "spacing": 0,
     "modules-left": ["hyprland/workspaces", "hyprland/window"],
     "modules-center": ["clock"],
-    "modules-right": ["mpris", "group/system", "custom/swaync", "network#wifi", "network#ethernet", "bluetooth", "wireplumber", "custom/microphone", "group/battery", "tray", "custom/power"]
+    "modules-right": ["mpris", "group/system", "network#wifi", "network#ethernet", "bluetooth", "wireplumber", "custom/microphone", "tray", "group/battery", "custom/swaync", "custom/power"]
 }

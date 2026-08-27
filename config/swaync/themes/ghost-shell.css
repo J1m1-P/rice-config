@@ -1,0 +1,259 @@
+:root {
+  --cc-bg: #000000;
+  --noti-bg: 10, 10, 10;
+  --noti-bg-alpha: 0.98;
+  --noti-bg-darker: #050505;
+  --noti-bg-hover: #141414;
+  --noti-bg-focus: rgba(114, 141, 190, 0.12);
+  --noti-border-color: #242424;
+  --noti-close-bg: #171717;
+  --noti-close-bg-hover: #242424;
+  --text-color: #e8e8e8;
+  --text-color-disabled: #707070;
+  --bg-selected: #728DBE;
+  --notification-icon-size: 52px;
+  --notification-app-icon-size: 18px;
+  --notification-group-icon-size: 22px;
+  --mpris-album-art-icon-size: 56px;
+  --widget-volume-row-icon-size: 18px;
+  --border-radius: 9px;
+  --font-size-body: 12px;
+  --font-size-summary: 13px;
+}
+
+* {
+  font-family: "JetBrains Mono", "Symbols Nerd Font Mono", sans-serif;
+  color: #e8e8e8;
+  box-shadow: none;
+  text-shadow: none;
+}
+
+notificationwindow,
+blankwindow {
+  background: transparent;
+}
+
+.control-center {
+  background: #000000;
+  border: 1px solid #242424;
+  border-radius: 9px;
+  padding: 12px;
+}
+
+.control-center-list,
+.floating-notifications {
+  background: transparent;
+}
+
+.floating-notifications {
+  margin-top: 38px;
+}
+
+.notification-row {
+  outline: none;
+  background: transparent;
+}
+
+.notification-row .notification-background {
+  padding: 4px 0;
+}
+
+.notification-row .notification-background .notification {
+  background: rgba(10, 10, 10, 0.98);
+  border: 1px solid #242424;
+  border-radius: 9px;
+  padding: 0;
+}
+
+.notification-row .notification-background .notification.low {
+  opacity: 0.72;
+}
+
+.notification-row .notification-background .notification.critical {
+  border-color: #d94f70;
+}
+
+.notification-default-action,
+.notification-action {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px;
+}
+
+.notification-default-action:hover,
+.notification-action:hover,
+.close-button:hover {
+  background: #141414;
+}
+
+.notification-action {
+  border-top: 1px solid #242424;
+  margin: 0 4px 4px;
+}
+
+.close-button {
+  min-width: 22px;
+  min-height: 22px;
+  padding: 0;
+  margin: 7px 7px 0 0;
+  background: #171717;
+  border: 0;
+  border-radius: 99px;
+}
+
+.summary {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.body,
+.time,
+.notification-group-header {
+  color: #a8a8a8;
+  font-size: 12px;
+}
+
+.image {
+  border-radius: 7px;
+  margin: 4px 8px 4px 4px;
+}
+
+.body-image {
+  margin-top: 5px;
+  border-radius: 7px;
+}
+
+.notification-group-headers,
+.notification-group-buttons {
+  margin: 3px 7px;
+}
+
+.widget-mpris,
+.widget-volume,
+.widget-backlight,
+.notification-title,
+.notification-dnd {
+  background: transparent;
+  border: 0;
+  padding: 9px 4px;
+}
+
+.widget-mpris,
+.widget-volume,
+.widget-backlight,
+.notification-title {
+  border-bottom: 1px solid #1d1d1d;
+}
+
+.widget-mpris-player {
+  background: transparent;
+  border: 0;
+  padding: 2px;
+}
+
+.widget-mpris-album-art {
+  border-radius: 7px;
+  margin-right: 10px;
+}
+
+.widget-mpris-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.widget-mpris-subtitle {
+  color: #a8a8a8;
+  font-size: 11px;
+}
+
+.widget-mpris button,
+.widget-volume button,
+.widget-title button {
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  padding: 5px;
+}
+
+.widget-mpris button:hover,
+.widget-volume button:hover,
+.widget-title button:hover {
+  background: #141414;
+}
+
+.widget-volume scale,
+.widget-backlight scale {
+  margin: 0 8px;
+}
+
+.widget-volume trough,
+.widget-backlight trough {
+  min-height: 4px;
+  border-radius: 99px;
+  background: #242424;
+}
+
+.widget-volume highlight,
+.widget-backlight highlight {
+  min-height: 4px;
+  border-radius: 99px;
+  background: #728DBE;
+}
+
+.widget-volume slider,
+.widget-backlight slider {
+  min-width: 12px;
+  min-height: 12px;
+  margin: -4px;
+  border: 0;
+  border-radius: 99px;
+  background: #ffffff;
+}
+
+.per-app-volume {
+  padding: 5px 0 0 25px;
+  color: #a8a8a8;
+}
+
+.notification-title {
+  padding-top: 13px;
+  padding-bottom: 6px;
+}
+
+.notification-title > label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.notification-dnd {
+  padding-top: 4px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid #242424;
+}
+
+.notification-dnd > switch {
+  min-width: 34px;
+  min-height: 18px;
+  background: #242424;
+  border: 0;
+  border-radius: 99px;
+}
+
+.notification-dnd > switch:checked {
+  background: #728DBE;
+}
+
+.notification-dnd > switch slider {
+  min-width: 14px;
+  min-height: 14px;
+  margin: 2px;
+  border: 0;
+  border-radius: 99px;
+  background: #ffffff;
+}
+
+.widget-notifications > box > label {
+  color: #707070;
+  padding: 22px 8px;
+}

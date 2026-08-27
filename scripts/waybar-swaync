@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+swaync-client --skip-wait --subscribe | jq --unbuffered -c '
+  (.count // 0) as $count |
+  (if (.dnd and .inhibited) then "dnd-inhibited"
+   elif .dnd then "dnd"
+   elif .inhibited then "inhibited"
+   else "normal" end) as $mode |
+  (if $count > 0 then $mode + "-notification" else $mode + "-none" end) as $state |
+  {
+    text: (if $count == 0 then "" elif $count > 99 then " 99+" else " \($count)" end),
+    alt: $state,
+    class: $state,
+    tooltip: (if $count == 1 then "1 notification" else "\($count) notifications" end)
+  }'

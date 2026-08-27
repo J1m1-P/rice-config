@@ -9,13 +9,16 @@ the programs themselves are installed separately.
 - `config/hypr/` — Hyprland, idle, lock, and keybind configuration.
 - `config/kitty/` — Kitty behavior, appearance, themes, and tracked default.
 - `config/rofi/` — Rofi behavior, themes, application policy, and app-specific helpers.
+- `config/rice-theme/` — desktop theme profiles and the tracked default profile.
+- `config/swaync/` — notification/control-center layout and themes.
 - `config/waybar/` — Waybar layout, logical module groups, and themes.
-- `scripts/` — general helpers deployed through `~/.local/bin/`.
+- `scripts/theme-selector/` — desktop and component theme commands.
+- `scripts/` — other helpers deployed through `~/.local/bin/`.
 - `setup.sh` — conservative, idempotent symlink deployment and validation.
 
-The live `~/.config/hypr`, `~/.config/kitty`, `~/.config/rofi`, and `~/.config/waybar`
-directories are symlinks into the clone. Managed commands and the two Rofi
-gateway desktop entries are individual symlinks. From the clone root, run:
+The live component directories below `~/.config` are symlinks into the clone.
+Managed commands and the two Rofi gateway desktop entries are individual
+symlinks. From the clone root, run:
 
 ```bash
 ./setup.sh
@@ -27,16 +30,24 @@ overwritten. The script does not install packages.
 ## Themes
 
 Available themes and each application's `default-theme` declaration are
-tracked. Setup creates ignored, machine-local selectors initialized to those
-defaults, so later theme changes leave Git clean.
+tracked. Setup creates ignored, machine-local selectors together under
+`config/rice-theme/selectors/`, initialized to those defaults, so later theme
+changes leave Git clean.
 
 ```bash
+rice-theme current
+rice-theme list
+rice-theme ghost-shell
+rice-theme default
+
+hyprland-theme list
+swaync-theme list
 kitty-theme list
-kitty-theme black
+kitty-theme ghost-shell
 kitty-theme default
 
 rofi-theme list
-rofi-theme ghost-v2
+rofi-theme ghost-shell
 rofi-theme default
 
 waybar-theme list
@@ -46,6 +57,16 @@ waybar-theme default
 
 The `default` command activates the tracked default. To select Kitty's theme
 named `default` instead, use `kitty-theme default.conf`.
+
+The tracked `ghost-shell` desktop profile maps Hyprland, Waybar, SwayNC, Rofi,
+and Kitty to their respective `ghost-shell` themes. `rice-theme` validates all
+five mappings before applying a profile and reports component drift from the
+selected profile in `rice-theme current`.
+
+SwayNC 0.12.4 provides the configured MPRIS, volume, backlight, DND, and
+notification widgets. Its native calendar widget was added upstream after that
+release; add `calendar` before `mpris` once a SwayNC build with calendar support
+is installed. The configuration intentionally avoids a custom calendar process.
 
 ## Rofi application policy
 
@@ -85,9 +106,9 @@ systemd user units should not also be enabled. On Ubuntu, the polkit agent's
 
 ## Validation
 
-`setup.sh` checks links, important commands, and the Hyprland, Kitty, Rofi, and
-desktop-entry configurations where their validators are available. Useful
-manual checks include:
+`setup.sh` checks links, important commands, and the Hyprland, Kitty, Rofi,
+Waybar, SwayNC, and desktop-entry configurations where their validators are
+available. Useful manual checks include:
 
 ```bash
 Hyprland --verify-config --config ~/.config/hypr/hyprland.conf

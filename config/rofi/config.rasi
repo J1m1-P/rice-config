@@ -1,4 +1,4 @@
-@import "local-theme.rasi"
+@import "../rice-theme/selectors/rofi.rasi"
 
 configuration {
     modes: "drun";

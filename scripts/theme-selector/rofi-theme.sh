@@ -1,27 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
-rofi_dir="${XDG_CONFIG_HOME:-$HOME/.config}/rofi"
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+rofi_dir="$config_home/rofi"
 themes_dir="$rofi_dir/themes"
-link="$rofi_dir/local-theme.rasi"
+selector_dir="$config_home/rice-theme/selectors"
+link="$selector_dir/rofi.rasi"
 default_file="$rofi_dir/default-theme"
 
 list_themes() {
     find "$themes_dir" -mindepth 1 -maxdepth 1 -type d ! -name _template -printf '%f\n' | sort
 }
 
+usage() {
+    printf 'Usage:\n  rofi-theme help\n  rofi-theme current\n  rofi-theme list\n  rofi-theme default\n  rofi-theme NAME\n'
+}
+
 if [[ $# -ne 1 ]]; then
-    echo "Usage: $0 {current|list|default|THEME_NAME}" >&2
-    echo "Available themes:" >&2
-    list_themes | sed 's/^/  /' >&2
+    usage >&2
     exit 2
 fi
 
 case "$1" in
+    help|-h|--help)
+        usage
+        exit
+        ;;
     current)
         [[ -r "$link" ]] || { echo 'No Rofi theme is selected; run setup.sh or rofi-theme default.' >&2; exit 1; }
         theme_path=$(sed -n 's/^@theme[[:space:]]*"\(.*\)"$/\1/p' "$link")
         [[ -n "$theme_path" ]] || { echo "Invalid Rofi selector: $link" >&2; exit 1; }
-        basename "$(dirname "$theme_path")"
+        name=$(basename "$(dirname "$theme_path")")
+        [[ "$name" =~ ^[A-Za-z0-9_-]+$ && "$(readlink -f -- "$theme_path" 2>/dev/null)" == "$(readlink -f -- "$themes_dir/$name/theme.rasi" 2>/dev/null)" ]] || {
+            echo "Invalid Rofi selector: $link" >&2
+            exit 1
+        }
+        printf '%s\n' "$name"
         exit
         ;;
     list)
@@ -47,7 +60,11 @@ if [[ ! -f "$target" ]]; then
     echo "Expected: $target" >&2
     exit 1
 fi
-temp=$(mktemp "$rofi_dir/.local-theme.rasi.XXXXXX")
+if command -v rofi >/dev/null 2>&1; then
+    rofi -theme "$target" -dump-theme >/dev/null
+fi
+[[ "${RICE_THEME_CHECK:-0}" == 1 ]] && exit
+temp=$(mktemp "$selector_dir/.rofi.rasi.XXXXXX")
 trap 'rm -f -- "$temp"' EXIT
 # Rofi 2.0 resolves nested imports reliably when the selected theme is loaded
 # by absolute path. This generated file is local state, not portable source.

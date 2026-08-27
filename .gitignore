@@ -5,17 +5,21 @@
 
 # Runtime and temporary files
 .kitty-theme-check.*
-.local-theme.conf.*
-.local-theme.rasi.*
-.local-theme.css.*
+.hyprland-theme-check.*
 .rofi-group.*
 *.tmp
 *.temp
 
-# Local theme selections
+# Centralized local theme selections
+config/rice-theme/selectors/
+
+# Legacy selectors retained for setup migration
 config/kitty/local-theme.conf
 config/rofi/local-theme.rasi
 config/waybar/local-theme.css
+config/hypr/local-theme.conf
+config/swaync/local-theme.css
+config/rice-theme/local-profile
 
 # Generated reports
 APPLICATIONS.md

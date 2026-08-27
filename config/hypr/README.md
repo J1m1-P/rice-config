@@ -54,7 +54,7 @@ Notifications appear through Sway Notification Center.
 | `Super` + `,` | Dismiss the newest notification. |
 | `Super` + `Shift` + `,` | Dismiss all notifications. |
 | `Super` + `Ctrl` + `,` | Open or close the notification panel. |
-| `Super` + `Alt` + `,` | Turn Do Not Disturb on or off. A notification confirms the new state. |
+| `Super` + `Alt` + `,` | Turn Do Not Disturb on or off. |
 
 ## Screenshots
 
