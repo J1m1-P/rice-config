@@ -4,20 +4,25 @@ This configuration provides a keyboard-focused, tiled desktop with ten workspace
 
 `Super` means the Windows/logo key on most keyboards.
 
+## Configuration files
+
+`hyprland.conf` loads base behavior, keybindings, startup commands, window and
+layer rules, then the active theme selector. Hypridle and Hyprlock keep their
+separate daemon configurations.
+
 ## Everyday shortcuts
 
 | Shortcut | Behavior |
 | --- | --- |
 | `Super` + `Q` | Open a Kitty terminal. |
 | `Super` + `Tab` | Open or close the Rofi application launcher. |
-| `Super` + `E` | Open the Thunar file manager. |
+| `Super` + `F` | Open the Thunar file manager. |
 | `Super` + `C` | Close the active window. |
 | `Super` + `L` | Lock the session. |
 | `Super` + `M` | Exit Hyprland and end the desktop session immediately. |
-| `Super` + `V` | Switch the active window between tiled and floating. |
-| `Super` + `P` | Toggle pseudo-tiling for the active window. This lets an application keep its preferred size while remaining in the tiled layout. |
-| `Super` + `J` | Change whether the next tiled window is placed beside or below the active window. |
 | `Super` + `B` | Show or hide Waybar. |
+| `Super` + `D` | Open or close the calendar. |
+| `Super` + `F1` | Open the keybinding reference. |
 
 ## Moving around windows
 
@@ -53,6 +58,7 @@ Notifications appear through Sway Notification Center.
 | --- | --- |
 | `Super` + `,` | Dismiss the newest notification. |
 | `Super` + `Shift` + `,` | Dismiss all notifications. |
+| `Super` + `N` | Open or close the notification panel. |
 | `Super` + `Ctrl` + `,` | Open or close the notification panel. |
 | `Super` + `Alt` + `,` | Turn Do Not Disturb on or off. |
 

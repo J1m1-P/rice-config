@@ -13,7 +13,7 @@ if [[ "${1:-}" == --rofi-mode ]]; then
 
     if ((event == 1)); then
         if [[ "$state" == categories ]]; then
-            case "$selected" in General|Windows|Kitty|System) state="$selected";; esac
+            case "$selected" in Applications|Windows|Workspaces|System|Media|Utilities) state="$selected";; esac
         else
             keep=true  # Enter/Right on a binding intentionally does nothing.
         fi
@@ -32,7 +32,7 @@ if [[ "${1:-}" == --rofi-mode ]]; then
     fi
 
     if [[ "$state" == categories ]]; then
-        printf '%s\n' General Windows Kitty System
+        printf '%s\n' Applications Windows Workspaces System Media Utilities
     else
         awk -F '\t' -v category="$state" '$1==category { printf "%-28s\t%s\n", $2, $3 }' "${KEYBIND_HELP_CACHE:?}"
     fi
@@ -51,13 +51,17 @@ trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 # Easy-to-edit category rules. First matching rule wins.
 category_for() {
     local source="$1" action="${2,,}" text="${3,,}"
-    [[ "$source" == kitty ]] && { printf Kitty; return; }
+    [[ "$source" == kitty ]] && { printf Applications; return; }
     case "$text" in
-        *notification*|*control\ center*|*calendar*|*waycal*|*swaync*|*screenshot*|*hyprshot*|*volume*|*brightness*|*audio*|*microphone*|*track*|*playerctl*) printf System ;;
-        *) case "$action" in
-            killactive|movefocus|movewindow|resizewindow|mouse|togglefloating|pseudo|togglesplit|fullscreen) printf Windows ;;
-            *) printf General ;;
-        esac ;;
+        *volume*|*brightness*|*audio*|*microphone*|*track*|*playerctl*|*play*|*pause*) printf Media; return ;;
+        *terminal*|*file\ manager*|*application\ launcher*) printf Applications; return ;;
+        *lock\ screen*|*toggle\ waybar*) printf System; return ;;
+    esac
+    case "$action" in
+        killactive|movefocus|movewindow|resizewindow|mouse|togglefloating|pseudo|togglesplit|fullscreen) printf Windows ;;
+        workspace|movetoworkspace) printf Workspaces ;;
+        exit) printf System ;;
+        *) printf Utilities ;;
     esac
 }
 
@@ -66,16 +70,6 @@ trim() {
     s="${s#"${s%%[![:space:]]*}"}"
     s="${s%"${s##*[![:space:]]}"}"
     printf %s "$s"
-}
-
-mods_from_mask() {
-    local n="${1:-0}" out=""
-    [[ "$n" =~ ^[0-9]+$ ]] || n=0
-    ((n & 64)) && out=Super
-    ((n & 4))  && out+="${out:+ + }Ctrl"
-    ((n & 1))  && out+="${out:+ + }Shift"
-    ((n & 8))  && out+="${out:+ + }Alt"
-    printf %s "$out"
 }
 
 pretty_mods() {
@@ -131,20 +125,6 @@ add() {
     [[ -n "$mods" ]] && shown="$mods + $shown"
     category="$(category_for "$source" "$action" "$description $6")"
     printf '%s\t%s\t%s\n' "$category" "$shown" "$description" >> "$raw"
-}
-
-collect_hypr_runtime() {
-    command -v hyprctl >/dev/null && command -v jq >/dev/null || return 1
-    local json mask key description action arg mods
-    json="$(hyprctl -j binds 2>/dev/null)" || return 1
-    [[ "$json" == \[* ]] || return 1
-    while IFS=$'\x1f' read -r mask key description action arg; do
-        [[ -n "$key" ]] || continue
-        mods="$(mods_from_mask "$mask")"
-        [[ -n "$description" ]] || description="$(describe_hypr "$action" "$arg")"
-        add hypr "$mods" "$key" "$description" "$action" "$arg"
-    done < <(printf %s "$json" | jq -r '.[] | [.modmask, (.key // ""), (.description // ""), (.dispatcher // ""), (.arg // "")] | join("\u001f")')
-    [[ -s "$raw" ]]
 }
 
 declare -A seen_hypr=()
@@ -210,7 +190,7 @@ collect_kitty_file() {
 }
 
 : > "$raw"
-collect_hypr_runtime || { : > "$raw"; collect_hypr_file "$hypr_config"; }
+collect_hypr_file "$hypr_config"
 collect_kitty_file "$kitty_config"
 
 # Small, verified subset of Kitty 0.45 defaults (not a default-key dump).
@@ -242,16 +222,16 @@ add kitty 'Ctrl + Shift' Escape 'Open Kitty control shell' curated ''
 
 # Condense the two repetitive 1–9 workspace families, then sort and deduplicate.
 awk -F '\t' 'BEGIN { OFS="\t" }
-    $1=="General" && $2 ~ /^Super \+ [1-9]$/ && $3 ~ /^Switch to workspace [1-9]$/ { switch_family=1; next }
-    $1=="General" && $2 ~ /^Super \+ Shift \+ [1-9]$/ && $3 ~ /^Move active window to workspace [1-9]$/ { move_family=1; next }
+    $1=="Workspaces" && $2 ~ /^Super \+ [1-9]$/ && $3 ~ /^Switch to workspace [1-9]$/ { switch_family=1; next }
+    $1=="Workspaces" && $2 ~ /^Super \+ Shift \+ [1-9]$/ && $3 ~ /^Move active window to workspace [1-9]$/ { move_family=1; next }
     { print }
     END {
-        if (switch_family) print "General", "Super + 1–9", "Switch workspace 1–9"
-        if (move_family) print "General", "Super + Shift + 1–9", "Move window to workspace 1–9"
+        if (switch_family) print "Workspaces", "Super + 1–9", "Switch workspace 1–9"
+        if (move_family) print "Workspaces", "Super + Shift + 1–9", "Move window to workspace 1–9"
     }' "$raw" | LC_ALL=C sort -t $'\t' -k1,1 -k2,2 -u > "$list"
 
 if [[ "${1:-}" == --print ]]; then
-    awk -F '\t' '{ printf "%-9s  %-28s  %s\n", $1, $2, $3 }' "$list"
+    awk -F '\t' '{ printf "%-12s  %-28s  %s\n", $1, $2, $3 }' "$list"
     exit
 fi
 
