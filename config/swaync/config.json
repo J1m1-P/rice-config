@@ -36,15 +36,16 @@
   "script-fail-notify": true,
   "widgets": [
     "mpris",
-    "volume",
     "backlight",
-    "title#notification-title",
+    "volume",
+    "buttons-grid#volume-mute",
     "dnd#notification-dnd",
+    "title#notification-title",
     "notifications"
   ],
   "widget-config": {
     "mpris": {
-      "blacklist": [],
+      "blacklist": ["^org\\.mpris\\.MediaPlayer2\\.playerctld$"],
       "autohide": true,
       "show-album-art": "when-available",
       "loop-carousel": false
@@ -61,6 +62,17 @@
       "animation-type": "slide_down",
       "animation-duration": 160
     },
+    "buttons-grid#volume-mute": {
+      "buttons-per-row": 7,
+      "actions": [
+        {
+          "label": "󰖁",
+          "type": "toggle",
+          "command": "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
+          "update-command": "wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q '\\[MUTED\\]' && echo true || echo false"
+        }
+      ]
+    },
     "backlight": {
       "label": "󰃠",
       "device": "nvidia_wmi_ec_backlight",
@@ -73,7 +85,7 @@
       "button-text": "Clear"
     },
     "dnd#notification-dnd": {
-      "text": "DND"
+      "text": "Do Not Disturb"
     },
     "notifications": {
       "vexpand": true

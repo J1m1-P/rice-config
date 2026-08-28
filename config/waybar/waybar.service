@@ -1,0 +1,10 @@
+[Unit]
+Description=Waybar for the Hyprland session
+Documentation=https://github.com/Alexays/Waybar/wiki/
+ConditionEnvironment=WAYLAND_DISPLAY
+
+[Service]
+ExecStart=/usr/bin/waybar
+ExecReload=/bin/kill -USR2 $MAINPID
+Restart=always
+RestartSec=1s

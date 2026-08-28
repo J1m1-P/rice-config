@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+# Keep both launch surfaces on one non-blocking toggle implementation.
+if pgrep -x waycal >/dev/null 2>&1; then
+    pkill -x waycal
+    exit
+fi
+
+waycal_bin="$HOME/.local/bin/waycal"
+if [[ ! -x "$waycal_bin" ]]; then
+    printf 'waycal-toggle: executable not found: %s\n' "$waycal_bin" >&2
+    exit 127
+fi
+
+# A separate session lets the click handler finish before waycal maps its
+# layer-shell surface over the center of the screen.
+setsid -f "$waycal_bin" >/dev/null 2>&1

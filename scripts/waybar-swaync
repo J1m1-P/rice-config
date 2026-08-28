@@ -2,6 +2,10 @@
 
 set -euo pipefail
 
+# Do not let the status subscriber undo an intentional systemctl stop through
+# D-Bus activation. Waybar's restart interval reconnects after a later start.
+systemctl --user is-active --quiet swaync.service || exit 0
+
 swaync-client --skip-wait --subscribe | jq --unbuffered -c '
   (.count // 0) as $count |
   (if (.dnd and .inhibited) then "dnd-inhibited"

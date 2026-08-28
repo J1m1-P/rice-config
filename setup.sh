@@ -7,6 +7,7 @@ config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 bin_dir="${XDG_BIN_HOME:-$HOME/.local/bin}"
 selectors_dir="$config_home/rice-theme/selectors"
+systemd_user_dir="$config_home/systemd/user"
 errors=0
 missing=0
 
@@ -38,6 +39,29 @@ migrate_moved_link() {
             ok "$destination -> $source (migrated)"
         else
             fail "could not migrate $destination"
+        fi
+    fi
+}
+
+migrate_managed_service_mask() {
+    local unit="$1" mask
+    mask="$systemd_user_dir/$unit"
+    if [[ -L "$mask" && "$(readlink -- "$mask")" == /dev/null ]]; then
+        if rm -- "$mask"; then
+            ok "removed obsolete $unit mask"
+        else
+            fail "could not remove obsolete $unit mask"
+        fi
+    fi
+}
+
+remove_obsolete_managed_link() {
+    local old_source="$1" destination="$2"
+    if [[ -L "$destination" && "$(readlink -- "$destination")" == "$old_source" ]]; then
+        if rm -- "$destination"; then
+            ok "removed obsolete managed link: $destination"
+        else
+            fail "could not remove obsolete managed link: $destination"
         fi
     fi
 }
@@ -215,6 +239,32 @@ ensure_link "$repo_dir/config/waybar" "$config_home/waybar"
 ensure_link "$repo_dir/config/swaync" "$config_home/swaync"
 ensure_link "$repo_dir/config/rice-theme" "$config_home/rice-theme"
 
+migrate_managed_service_mask waybar.service
+migrate_managed_service_mask swaync.service
+remove_obsolete_managed_link \
+    "$repo_dir/config/systemd/user/waybar.service.d/rice-config.conf" \
+    "$systemd_user_dir/waybar.service.d/rice-config.conf"
+migrate_moved_link \
+    "$repo_dir/config/systemd/user/waybar.service" \
+    "$repo_dir/config/waybar/waybar.service" \
+    "$systemd_user_dir/waybar.service"
+migrate_moved_link \
+    "$repo_dir/config/systemd/user/swaync.service.d/rice-config.conf" \
+    "$repo_dir/config/swaync/swaync.service.conf" \
+    "$systemd_user_dir/swaync.service.d/rice-config.conf"
+ensure_link "$repo_dir/config/waybar/waybar.service" \
+    "$systemd_user_dir/waybar.service"
+ensure_link "$repo_dir/config/swaync/swaync.service.conf" \
+    "$systemd_user_dir/swaync.service.d/rice-config.conf"
+remove_obsolete_managed_link \
+    "$repo_dir/config/pipewire/pipewire-pulse.conf.d/50-spotify-icon.conf" \
+    "$config_home/pipewire/pipewire-pulse.conf.d/50-spotify-icon.conf"
+ensure_link "$repo_dir/config/swaync/spotify.conf" \
+    "$config_home/pipewire/pipewire-pulse.conf.d/swaync-spotify.conf"
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user daemon-reload || fail 'could not reload systemd user units'
+fi
+
 migrate_moved_link "$repo_dir/scripts/kitty-theme.sh" "$repo_dir/scripts/theme-selector/kitty-theme.sh" "$bin_dir/kitty-theme"
 migrate_moved_link "$repo_dir/scripts/rofi-theme.sh" "$repo_dir/scripts/theme-selector/rofi-theme.sh" "$bin_dir/rofi-theme"
 migrate_moved_link "$repo_dir/scripts/waybar-theme.sh" "$repo_dir/scripts/theme-selector/waybar-theme.sh" "$bin_dir/waybar-theme"
@@ -227,6 +277,7 @@ ensure_link "$repo_dir/scripts/theme-selector/kitty-theme.sh" "$bin_dir/kitty-th
 ensure_link "$repo_dir/scripts/theme-selector/rofi-theme.sh" "$bin_dir/rofi-theme"
 ensure_link "$repo_dir/scripts/waybar-nvidia" "$bin_dir/waybar-nvidia"
 ensure_link "$repo_dir/scripts/waybar-microphone" "$bin_dir/waybar-microphone"
+ensure_link "$repo_dir/scripts/waycal-toggle" "$bin_dir/waycal-toggle"
 ensure_link "$repo_dir/scripts/theme-selector/waybar-theme.sh" "$bin_dir/waybar-theme"
 ensure_link "$repo_dir/scripts/theme-selector/hyprland-theme.sh" "$bin_dir/hyprland-theme"
 ensure_link "$repo_dir/scripts/theme-selector/swaync-theme.sh" "$bin_dir/swaync-theme"
@@ -264,7 +315,7 @@ for item in \
     'rofi:application launcher' 'hypridle:idle handling' 'hyprlock:screen locking' \
     'waybar:desktop panel' 'swaync:notification daemon' 'swaync-client:notification controls' \
     'wlctl:Wi-Fi control' 'nmtui:Ethernet control' 'bluetui:Bluetooth control' \
-    'wiremix:audio control' 'pw-dump:microphone state' 'wpctl:audio mute control' \
+    'wiremix:audio control' 'pipewire-pulse:PulseAudio compatibility' 'pw-dump:microphone state' 'wpctl:audio mute control' \
     'powerprofilesctl:power profile control' 'wlogout:power menu' \
     'swayosd-server:on-screen display' 'swayosd-client:media and hardware keys' \
     'playerctl:media control' 'brightnessctl:brightness control' 'thunar:file manager' 'jq:JSON processing' \
@@ -287,6 +338,7 @@ else
     missing=$((missing + 1))
 fi
 command -v hyprpicker >/dev/null 2>&1 || warn 'optional command missing: hyprpicker (Hyprshot freeze mode)'
+command -v waycal >/dev/null 2>&1 || warn 'optional command missing: waycal (Waybar clock calendar; install the official release binary on PATH)'
 case ":$PATH:" in
     *:"$bin_dir":*) ;;
     *) warn "$bin_dir is not on PATH; desktop gateway commands will not launch" ;;

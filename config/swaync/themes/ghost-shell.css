@@ -131,6 +131,7 @@ blankwindow {
 
 .widget-mpris,
 .widget-volume,
+.widget-buttons-grid.volume-mute,
 .widget-backlight,
 .notification-title,
 .notification-dnd {
@@ -140,9 +141,8 @@ blankwindow {
 }
 
 .widget-mpris,
-.widget-volume,
 .widget-backlight,
-.notification-title {
+.widget-buttons-grid.volume-mute {
   border-bottom: 1px solid #1d1d1d;
 }
 
@@ -187,6 +187,44 @@ blankwindow {
   margin: 0 8px;
 }
 
+.widget-volume > box > label,
+.widget-backlight > label {
+  min-width: 20px;
+}
+
+.widget-volume {
+  padding-bottom: 2px;
+}
+
+.widget-buttons-grid.volume-mute {
+  padding-top: 0;
+}
+
+.widget-buttons-grid.volume-mute flowboxchild {
+  background: transparent;
+}
+
+.widget-buttons-grid.volume-mute flowboxchild > button {
+  min-width: 30px;
+  min-height: 24px;
+  padding: 2px 8px;
+  color: #707070;
+  background: transparent;
+  border: 1px solid #242424;
+  border-radius: 6px;
+}
+
+.widget-buttons-grid.volume-mute flowboxchild > button:hover {
+  color: #e8e8e8;
+  background: #141414;
+}
+
+.widget-buttons-grid.volume-mute flowboxchild > button:checked {
+  color: #e8e8e8;
+  background: rgba(217, 79, 112, 0.28);
+  border-color: #d94f70;
+}
+
 .widget-volume trough,
 .widget-backlight trough {
   min-height: 4px;
@@ -211,25 +249,39 @@ blankwindow {
   background: #ffffff;
 }
 
+.widget-backlight scale,
+.widget-backlight trough,
+.widget-backlight highlight,
+.widget-backlight slider {
+  transition: none;
+}
+
 .per-app-volume {
   padding: 5px 0 0 25px;
   color: #a8a8a8;
 }
 
+.widget-volume row image {
+  margin-right: 6px;
+}
+
 .notification-title {
-  padding-top: 13px;
+  padding-top: 7px;
   padding-bottom: 6px;
 }
 
-.notification-title > label {
+.notification-title > label,
+.notification-dnd > label {
+  font-family: "JetBrains Mono", "Symbols Nerd Font Mono", sans-serif;
   font-size: 14px;
   font-weight: 600;
+  letter-spacing: 0;
+  color: #e8e8e8;
 }
 
 .notification-dnd {
-  padding-top: 4px;
-  padding-bottom: 9px;
-  border-bottom: 1px solid #242424;
+  padding-top: 11px;
+  padding-bottom: 8px;
 }
 
 .notification-dnd > switch {
@@ -256,4 +308,15 @@ blankwindow {
 .widget-notifications > box > label {
   color: #707070;
   padding: 22px 8px;
+}
+
+/* SwayNC 0.12.4 sets slider values as GtkTooltip text in code. It has no
+ * per-widget switch for those tooltips, so suppress tooltip presentation only
+ * inside the SwayNC process. The control center has no other configured
+ * tooltip-dependent controls. */
+tooltip {
+  opacity: 0;
+  background: transparent;
+  border: 0;
+  padding: 0;
 }

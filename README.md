@@ -10,8 +10,8 @@ the programs themselves are installed separately.
 - `config/kitty/` — Kitty behavior, appearance, themes, and tracked default.
 - `config/rofi/` — Rofi behavior, themes, application policy, and app-specific helpers.
 - `config/rice-theme/` — desktop theme profiles and the tracked default profile.
-- `config/swaync/` — notification/control-center layout and themes.
-- `config/waybar/` — Waybar layout, logical module groups, and themes.
+- `config/swaync/` — notification/control-center layout, themes, and service policy.
+- `config/waybar/` — Waybar layout, logical module groups, themes, and user service.
 - `scripts/theme-selector/` — desktop and component theme commands.
 - `scripts/` — other helpers deployed through `~/.local/bin/`.
 - `setup.sh` — conservative, idempotent symlink deployment and validation.
@@ -63,10 +63,20 @@ and Kitty to their respective `ghost-shell` themes. `rice-theme` validates all
 five mappings before applying a profile and reports component drift from the
 selected profile in `rice-theme current`.
 
-SwayNC 0.12.4 provides the configured MPRIS, volume, backlight, DND, and
-notification widgets. Its native calendar widget was added upstream after that
-release; add `calendar` before `mpris` once a SwayNC build with calendar support
-is installed. The configuration intentionally avoids a custom calendar process.
+Ubuntu's SwayNC 0.12.4 is intentionally retained for the MPRIS, volume,
+backlight, DND, and notification widgets. The Waybar clock opens the separate
+`waycal` month popup, while the Control Center module opens SwayNC (right-click
+toggles DND). This separation avoids replacing the distribution SwayNC build.
+Waycal remains an external, user-installed program and is not part of
+`rice-theme` because it currently has no supported theme/config interface.
+The Waybar clock and `Super+D` share `waycal-toggle`; `Super+N` toggles SwayNC.
+Waybar and SwayNC both follow the `pipewire-pulse` default sink. Waybar displays
+nearest-integer percentages; SwayNC 0.12.4 exposes only its native continuous
+slider (with no percentage label or configurable volume rounding), and its
+generated slider-value tooltips are hidden by the SwayNC theme. The MPRIS
+widget filters the redundant `playerctld` proxy. SwayNC's Spotify metadata rule
+normalizes its per-app volume label and supplies the installed `spotify-client`
+icon name.
 
 ## Rofi application policy
 
@@ -91,17 +101,29 @@ differ.
 - Configured features: `brightnessctl`, `playerctl` support through SwayOSD,
   Thunar, JetBrains Mono, DejaVu Sans Mono, and an icon theme providing common
   symbolic icons.
-- Waybar controls: `wlctl`, NetworkManager's `nmtui`, `bluetui`, `wiremix`,
-  WirePlumber's `pw-dump` and `wpctl`, Power Profiles Daemon, and `wlogout`.
+- Waybar controls: `waycal`, `wlctl`, NetworkManager's `nmtui`, `bluetui`,
+  `wiremix`, WirePlumber's `pw-dump` and `wpctl`, Power Profiles Daemon, and
+  `wlogout`. Install waycal separately from its official release; setup only
+  reports when it is unavailable.
 - Screenshots: Hyprshot, `grim`, `slurp`, `jq`, `wl-copy`, `notify-send`, and
   `xdg-user-dir`. `hyprpicker` is optional for Hyprshot's freeze mode.
 
 Hyprshot is an external dependency and is not managed or modified by this
 repository.
 
-Hyprland starts the graphical companions through `exec-once`; their optional
-systemd user units should not also be enabled. On Ubuntu, the polkit agent's
-`org.hyprland.style` dependency is provided by
+Hyprland imports its Wayland session environment and starts the package-provided
+Waybar and SwayNC user services. The distribution may also enable those same
+units for `graphical-session.target`; both triggers converge on one systemd
+unit, so systemd remains the sole process owner and restarts either process.
+Recover them manually with:
+
+```bash
+systemctl --user restart waybar.service
+systemctl --user restart swaync.service
+```
+
+Other graphical companions continue to start directly through `exec-once`. On
+Ubuntu, the polkit agent's `org.hyprland.style` dependency is provided by
 `qml6-module-org-hyprland-style`.
 
 ## Validation

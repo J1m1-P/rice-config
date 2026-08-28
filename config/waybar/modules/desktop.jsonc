@@ -1,5 +1,5 @@
 {
     "hyprland/workspaces": {"format": "{name}", "all-outputs": true, "persistent-workspaces": {"*": 0}, "disable-scroll": true, "sort-by": "number"},
     "hyprland/window": {"format": " {title}", "max-length": 38, "separate-outputs": true},
-    "clock": {"format": "{:%a %H:%M}", "timezone": "Etc/GMT+7", "tooltip-format": "{:%A, %B %d, %Y}", "on-click": "swaync-client --skip-wait --toggle-panel"}
+    "clock": {"format": "{:%a %H:%M}", "timezone": "Etc/GMT+7", "tooltip-format": "{:%A, %B %d, %Y}", "on-click": "$HOME/.local/bin/waycal-toggle"}
 }
