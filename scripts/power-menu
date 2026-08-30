@@ -1,0 +1,95 @@
+#!/usr/bin/env bash
+
+set -u
+
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+menu_theme="$config_home/rofi/power-menu.rasi"
+confirm_theme="$config_home/rofi/power-confirm.rasi"
+layer_rule='layerrule[power_menu]:match:namespace'
+menu_name='power-menu'
+
+# Waybar and Super+Escape share this helper, so either launch surface toggles
+# the currently open main or confirmation menu instead of starting a rival.
+if pgrep -f "^rofi .* -name ${menu_name}( |$)" >/dev/null 2>&1; then
+    pkill -TERM -f "^rofi .* -name ${menu_name}( |$)"
+    exit
+fi
+
+set_layer_rule_namespace() {
+    hyprctl keyword "$layer_rule $1" >/dev/null 2>&1
+}
+
+cleanup() {
+    set_layer_rule_namespace '^$' || true
+}
+
+run_action() {
+    cleanup
+    trap - EXIT HUP INT TERM
+    exec "$@"
+}
+
+choose() {
+    local theme="$1" prompt="$2"
+    rofi -dmenu -sync -no-custom -show-icons -format i \
+        -name "$menu_name" \
+        -monitor -4 \
+        -theme "$theme" -p "$prompt" -mesg "$prompt" \
+        -disable-history -hover-select -click-to-exit \
+        -kb-move-char-back 'Control+b' -kb-move-char-forward 'Control+f' \
+        -kb-row-left 'Left,Control+Page_Up' \
+        -kb-row-right 'Right,Control+Page_Down' \
+        -me-select-entry '' -me-accept-entry MousePrimary
+}
+
+main_entries() {
+    printf '%b\n' \
+        "Lock\0icon\x1f<span foreground='#e8e8e8' font_desc='Symbols Nerd Font Mono 32'></span>" \
+        "Suspend\0icon\x1f<span foreground='#e8e8e8' font_desc='Symbols Nerd Font Mono 32'></span>" \
+        "Logout\0icon\x1f<span foreground='#e8e8e8' font_desc='Symbols Nerd Font Mono 32'>󰍃</span>" \
+        "Reboot\0icon\x1f<span foreground='#e8e8e8' font_desc='Symbols Nerd Font Mono 32'>󰜉</span>" \
+        "Shutdown\0icon\x1f<span foreground='#e8e8e8' font_desc='Symbols Nerd Font Mono 32'></span>"
+}
+
+confirm_action() {
+    local action="$1" choice status
+    choice=$(printf 'Cancel\nConfirm\n' | choose "$confirm_theme" "${action^}?")
+    status=$?
+
+    # The shared helper closes an open Rofi with SIGTERM. Distinguish that
+    # global toggle from Rofi's ordinary Escape/Cancel behavior.
+    [[ "$status" == 143 ]] && return 2
+    [[ "$status" == 0 ]] || return 1
+    [[ "$choice" == 1 ]]
+}
+
+confirm_or_run() {
+    local action="$1"
+    shift
+
+    confirm_action "$action"
+    case $? in
+        0) run_action "$@" ;;
+        1) return ;;
+        2) exit 0 ;;
+    esac
+}
+
+trap cleanup EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+set_layer_rule_namespace '^rofi$' || true
+
+while true; do
+    action=$(main_entries | choose "$menu_theme" SESSION) || exit 0
+
+    case "$action" in
+        0) run_action loginctl lock-session ;;
+        1) run_action systemctl suspend ;;
+        2) confirm_or_run logout hyprctl dispatch exit ;;
+        3) confirm_or_run reboot systemctl reboot ;;
+        4) confirm_or_run shutdown systemctl poweroff ;;
+        *) exit 0 ;;
+    esac
+done

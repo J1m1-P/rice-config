@@ -237,6 +237,7 @@ ensure_link "$repo_dir/config/kitty" "$config_home/kitty"
 ensure_link "$repo_dir/config/rofi" "$config_home/rofi"
 ensure_link "$repo_dir/config/waybar" "$config_home/waybar"
 ensure_link "$repo_dir/config/swaync" "$config_home/swaync"
+remove_obsolete_managed_link "$repo_dir/config/wlogout" "$config_home/wlogout"
 ensure_link "$repo_dir/config/rice-theme" "$config_home/rice-theme"
 
 migrate_managed_service_mask waybar.service
@@ -284,6 +285,8 @@ ensure_link "$repo_dir/scripts/theme-selector/swaync-theme.sh" "$bin_dir/swaync-
 ensure_link "$repo_dir/scripts/theme-selector/rice-theme.sh" "$bin_dir/rice-theme"
 ensure_link "$repo_dir/scripts/waybar-swaync" "$bin_dir/waybar-swaync"
 ensure_link "$repo_dir/scripts/rofi-apps" "$bin_dir/rofi-apps"
+ensure_link "$repo_dir/scripts/idle-suspend" "$bin_dir/idle-suspend"
+ensure_link "$repo_dir/scripts/power-menu" "$bin_dir/power-menu"
 
 ensure_link "$repo_dir/config/rofi/hidden-applications.desktop" \
     "$data_home/applications/rofi-hidden-applications.desktop"
@@ -316,7 +319,7 @@ for item in \
     'waybar:desktop panel' 'swaync:notification daemon' 'swaync-client:notification controls' \
     'wlctl:Wi-Fi control' 'nmtui:Ethernet control' 'bluetui:Bluetooth control' \
     'wiremix:audio control' 'pipewire-pulse:PulseAudio compatibility' 'pw-dump:microphone state' 'wpctl:audio mute control' \
-    'powerprofilesctl:power profile control' 'wlogout:power menu' \
+    'powerprofilesctl:power profile control' \
     'swayosd-server:on-screen display' 'swayosd-client:media and hardware keys' \
     'playerctl:media control' 'brightnessctl:brightness control' 'thunar:file manager' 'jq:JSON processing' \
     'gio:desktop-entry launching' 'hyprshot:screenshots (external)' 'grim:screenshot capture' \

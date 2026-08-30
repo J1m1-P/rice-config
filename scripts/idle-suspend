@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+set -u
+
+runtime_dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+pid_file="$runtime_dir/rice-idle-suspend.pid"
+
+cleanup() {
+    local pid
+    [[ -r "$pid_file" ]] || return
+    IFS= read -r pid < "$pid_file"
+    [[ "$pid" == "$$" ]] && rm -f -- "$pid_file"
+}
+
+on_battery() {
+    local supply type online status
+
+    for supply in /sys/class/power_supply/*; do
+        [[ -r "$supply/type" ]] || continue
+        IFS= read -r type < "$supply/type"
+        [[ "$type" != Battery && -r "$supply/online" ]] || continue
+        IFS= read -r online < "$supply/online"
+        [[ "$online" == 1 ]] && return 1
+    done
+
+    for status in /sys/class/power_supply/BAT*/status; do
+        [[ -r "$status" ]] || continue
+        grep -qx Discharging "$status" && return 0
+    done
+
+    return 1
+}
+
+cancel_watch() {
+    local pid args
+    [[ -r "$pid_file" ]] || return 0
+    IFS= read -r pid < "$pid_file"
+    if [[ "$pid" =~ ^[0-9]+$ ]] && args=$(ps -p "$pid" -o args= 2>/dev/null) &&
+       [[ "$args" == *"idle-suspend watch"* ]]; then
+        kill "$pid" 2>/dev/null || true
+    fi
+    rm -f -- "$pid_file"
+}
+
+case "${1:-}" in
+    start)
+        cancel_watch
+        "$0" watch &
+        printf '%s\n' "$!" > "$pid_file"
+        ;;
+    cancel)
+        cancel_watch
+        ;;
+    watch)
+        trap cleanup EXIT
+        trap 'exit 0' HUP INT TERM
+        while ! on_battery; do
+            sleep 1
+        done
+        systemctl suspend
+        ;;
+    *)
+        printf 'Usage: %s {start|cancel}\n' "${0##*/}" >&2
+        exit 2
+        ;;
+esac

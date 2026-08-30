@@ -55,7 +55,7 @@ category_for() {
     case "$text" in
         *volume*|*brightness*|*audio*|*microphone*|*track*|*playerctl*|*play*|*pause*) printf Media; return ;;
         *terminal*|*file\ manager*|*application\ launcher*) printf Applications; return ;;
-        *lock\ screen*|*toggle\ waybar*) printf System; return ;;
+        *lock\ screen*|*power\ menu*|*toggle\ waybar*) printf System; return ;;
     esac
     case "$action" in
         killactive|movefocus|movewindow|resizewindow|mouse|togglefloating|pseudo|togglesplit|fullscreen) printf Windows ;;

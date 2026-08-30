@@ -87,13 +87,16 @@ The keyboard's dedicated media keys control playback through compatible media ap
 When the computer remains unused:
 
 1. After 5 minutes, screen brightness is reduced to 10%.
-2. After 5 minutes 30 seconds, the session locks.
-3. After 5 minutes 50 seconds, the displays turn off.
-4. After 10 minutes, the computer suspends if it is running on battery power.
+2. After 7 minutes, the session locks.
+3. After 9 minutes, the displays turn off.
+4. After 15 minutes, the computer suspends if it is running on battery power.
+5. After 60 minutes, the computer suspends if it is connected to AC power.
 
 Moving the mouse or pressing a key restores the previous brightness and turns the displays back on. Applications such as video players may temporarily prevent these idle actions while they are actively playing media.
 
-The computer also locks before it goes to sleep. After waking, the displays are turned back on.
+If AC power is disconnected after the 15-minute mark, the computer suspends promptly instead of waiting for the 60-minute AC timeout. The computer also locks before it goes to sleep. After waking, the displays are turned back on.
+
+Closing the laptop lid locks and suspends through systemd-logind during normal laptop use. When docked with an external display, closing the lid leaves the computer running.
 
 ## Lock screen
 
@@ -101,10 +104,23 @@ The lock screen shows:
 
 - A blurred view of the current desktop.
 - The current time.
+- The weekday and date.
 - A centered password field.
 - Visual feedback when the password is accepted or rejected.
 
 The pointer is hidden while locked. Enter the account password to return to the desktop.
+
+## Power menu
+
+The Waybar power button and `Super+Escape` toggle the same centered Rofi system
+panel on the focused monitor. Use Left and Right to move between Lock, Suspend,
+Logout, Reboot, and Shutdown; Enter activates the selected action and Escape
+closes the menu. Mouse selection is also supported.
+
+Lock and Suspend run immediately. Logout, Reboot, and Shutdown replace the main
+row with a shared Cancel/Confirm surface. Cancel or Escape returns to the main
+power menu; Confirm performs the selected action. Hibernate is intentionally
+absent.
 
 ## Desktop appearance and input
 

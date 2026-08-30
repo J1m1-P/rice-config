@@ -1,5 +1,5 @@
 {
     "group/system": {"orientation": "horizontal", "modules": ["custom/system", "cpu", "memory", "temperature", "custom/nvidia"], "drawer": {"transition-duration": 250, "click-to-reveal": true, "children-class": "system-child"}},
     "custom/system": {"format": "󰍛", "tooltip-format": "System monitor"}, "cpu": {"format": "CPU {usage}%", "interval": 5, "states": {"warning": 70, "critical": 90}}, "memory": {"format": "RAM {percentage}%", "interval": 5, "states": {"warning": 70, "critical": 90}}, "temperature": {"format": "TEMP {temperatureC}°C", "tooltip-format": "Temperature: {temperatureC}°C", "critical-threshold": 80},
-    "custom/nvidia": {"exec": "$HOME/.local/bin/waybar-nvidia", "return-type": "json", "interval": 5, "format": "{text}", "tooltip": true}, "custom/power": {"format": "", "tooltip-format": "Power menu", "on-click": "wlogout"}
+    "custom/nvidia": {"exec": "$HOME/.local/bin/waybar-nvidia", "return-type": "json", "interval": 5, "format": "{text}", "tooltip": true}, "custom/power": {"format": "", "tooltip-format": "Power menu", "on-click": "$HOME/.local/bin/power-menu"}
 }

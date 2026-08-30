@@ -1,0 +1,114 @@
+* {
+    font: "JetBrains Mono 11";
+    text-color: #e8e8e8;
+}
+
+window {
+    location: center;
+    anchor: center;
+    y-offset: -70px;
+    width: 650px;
+    padding: 20px 22px 22px;
+    border: 1px;
+    border-color: rgba(60, 68, 82, 0.88);
+    border-radius: 11px;
+    background-color: rgba(0, 0, 0, 0.88);
+}
+
+mainbox {
+    orientation: vertical;
+    children: [ header, listview ];
+    spacing: 18px;
+    background-color: transparent;
+}
+
+header {
+    orientation: horizontal;
+    children: [ textbox-header-line-left, textbox-header-title, textbox-header-line-right ];
+    expand: false;
+    spacing: 10px;
+    horizontal-align: 0.5;
+    background-color: transparent;
+}
+
+textbox-header-line-left,
+textbox-header-line-right {
+    expand: true;
+    font: "JetBrains Mono 9";
+    text-color: #e8e8e8;
+    markup: true;
+    background-color: transparent;
+}
+
+textbox-header-line-left {
+    content: "──────  <span foreground='#728DBE'>•</span>";
+    horizontal-align: 1.0;
+}
+
+textbox-header-title {
+    expand: false;
+    content: "SESSION";
+    font: "JetBrains Mono 9";
+    text-color: #728DBE;
+    background-color: transparent;
+}
+
+textbox-header-line-right {
+    content: "<span foreground='#728DBE'>•</span>  ──────";
+    horizontal-align: 0.0;
+}
+
+listview {
+    expand: true;
+    flow: horizontal;
+    lines: 1;
+    columns: 5;
+    padding: 0px;
+    border: 0px;
+    spacing: 8px;
+    scrollbar: false;
+    background-color: transparent;
+}
+
+element {
+    orientation: vertical;
+    children: [ element-icon, element-text ];
+    spacing: 8px;
+    padding: 12px 10px;
+    border: 1px;
+    border-color: transparent;
+    border-radius: 8px;
+    background-color: transparent;
+    text-color: #e8e8e8;
+}
+
+element normal.normal,
+element alternate.normal {
+    border-color: transparent;
+    background-color: transparent;
+    text-color: #e8e8e8;
+}
+
+element-icon {
+    size: 32px;
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: #e8e8e8;
+    background-color: inherit;
+}
+
+element-text {
+    font: "JetBrains Mono 10";
+    horizontal-align: 0.5;
+    vertical-align: 0.5;
+    text-color: inherit;
+    background-color: inherit;
+}
+
+element selected.normal,
+element selected.active,
+element selected.urgent {
+    border-color: #728DBE;
+    background-color: rgba(20, 20, 20, 0.96);
+    text-color: #728DBE;
+}

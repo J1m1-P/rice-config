@@ -70,6 +70,7 @@ toggles DND). This separation avoids replacing the distribution SwayNC build.
 Waycal remains an external, user-installed program and is not part of
 `rice-theme` because it currently has no supported theme/config interface.
 The Waybar clock and `Super+D` share `waycal-toggle`; `Super+N` toggles SwayNC.
+The Waybar power button and `Super+Escape` toggle the same Rofi power menu.
 Waybar and SwayNC both follow the `pipewire-pulse` default sink. Waybar displays
 nearest-integer percentages; SwayNC 0.12.4 exposes only its native continuous
 slider (with no percentage label or configurable volume rounding), and its
@@ -103,19 +104,19 @@ differ.
   symbolic icons.
 - Waybar controls: `waycal`, `wlctl`, NetworkManager's `nmtui`, `bluetui`,
   `wiremix`, WirePlumber's `pw-dump` and `wpctl`, Power Profiles Daemon, and
-  `wlogout`. Install waycal separately from its official release; setup only
-  reports when it is unavailable.
+  the Rofi-based power menu. Install waycal separately from its official
+  release; setup only reports when it is unavailable.
 - Screenshots: Hyprshot, `grim`, `slurp`, `jq`, `wl-copy`, `notify-send`, and
   `xdg-user-dir`. `hyprpicker` is optional for Hyprshot's freeze mode.
 
 Hyprshot is an external dependency and is not managed or modified by this
 repository.
 
-Hyprland imports its Wayland session environment and starts the package-provided
-Waybar and SwayNC user services. The distribution may also enable those same
-units for `graphical-session.target`; both triggers converge on one systemd
-unit, so systemd remains the sole process owner and restarts either process.
-Recover them manually with:
+Hyprland imports the current Wayland session environment, clears any prior
+start-limit failure, and restarts the Waybar, SwayNC, and polkit user services.
+On compositor shutdown it stops those services so they cannot restart against
+the departed Wayland display. Systemd remains the sole process owner. Recover
+the panel and notification daemon manually with:
 
 ```bash
 systemctl --user restart waybar.service
