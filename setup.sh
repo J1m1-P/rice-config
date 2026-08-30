@@ -257,6 +257,8 @@ ensure_link "$repo_dir/config/waybar/waybar.service" \
     "$systemd_user_dir/waybar.service"
 ensure_link "$repo_dir/config/swaync/swaync.service.conf" \
     "$systemd_user_dir/swaync.service.d/rice-config.conf"
+ensure_link "$repo_dir/config/systemd/user/hyprland-session.target" \
+    "$systemd_user_dir/hyprland-session.target"
 remove_obsolete_managed_link \
     "$repo_dir/config/pipewire/pipewire-pulse.conf.d/50-spotify-icon.conf" \
     "$config_home/pipewire/pipewire-pulse.conf.d/50-spotify-icon.conf"

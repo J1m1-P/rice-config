@@ -1,0 +1,8 @@
+[Unit]
+Description=Hyprland graphical session
+Documentation=man:systemd.special(7)
+Requires=graphical-session.target
+Wants=hyprpolkitagent.service
+After=graphical-session.target
+PartOf=graphical-session.target
+PropagatesStopTo=graphical-session.target
