@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+  <action>
+    <icon>utilities-terminal</icon>
+    <name>Open Terminal Here</name>
+    <submenu></submenu>
+    <unique-id>rice-config-open-terminal-here</unique-id>
+    <command>sh -c &apos;path=$1; if [ ! -d &quot;$path&quot; ]; then path=${path%/*}; [ -n &quot;$path&quot; ] || path=/; fi; exec kitty --directory &quot;$path&quot;&apos; sh %f</command>
+    <description>Open Kitty in the current folder, selected folder, or selected file&apos;s parent folder</description>
+    <range>1-1</range>
+    <patterns>*</patterns>
+    <directories/>
+    <audio-files/>
+    <image-files/>
+    <other-files/>
+    <text-files/>
+    <video-files/>
+  </action>
+</actions>

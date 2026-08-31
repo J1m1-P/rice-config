@@ -1,0 +1,33 @@
+# channel          property                                    type    value
+# /hidden-bookmarks is merged separately so Desktop can be hidden without
+# discarding other shortcuts the user has hidden through Thunar.
+thunar             /default-view                               string  ThunarDetailsView
+thunar             /last-view                                  string  ThunarDetailsView
+thunar             /last-details-view-column-order             string  THUNAR_COLUMN_NAME,THUNAR_COLUMN_SIZE,THUNAR_COLUMN_SIZE_IN_BYTES,THUNAR_COLUMN_TYPE,THUNAR_COLUMN_DATE_MODIFIED
+thunar             /last-details-view-visible-columns          string  THUNAR_COLUMN_DATE_MODIFIED,THUNAR_COLUMN_NAME,THUNAR_COLUMN_SIZE,THUNAR_COLUMN_TYPE
+thunar             /last-details-view-zoom-level               string  THUNAR_ZOOM_LEVEL_38_PERCENT
+thunar             /last-icon-view-zoom-level                  string  THUNAR_ZOOM_LEVEL_100_PERCENT
+thunar             /last-sort-column                           string  THUNAR_COLUMN_NAME
+thunar             /last-sort-order                            string  GTK_SORT_ASCENDING
+thunar             /misc-folders-first                         bool    true
+thunar             /misc-directory-specific-settings           bool    false
+thunar             /last-show-hidden                           bool    false
+thunar             /misc-single-click                          bool    false
+thunar             /last-location-bar                          string  ThunarLocationButtons
+thunar             /last-toolbar-items                         string  menu:0,back:1,forward:1,open-parent:1,open-home:1,new-tab:0,new-window:0,toggle-split-view:0,undo:0,redo:0,zoom-out:0,zoom-in:0,zoom-reset:0,view-as-icons:0,view-as-detailed-list:0,view-as-compact-list:0,view-switcher:0,show-hidden:0,location-bar:1,reload:1,search:1
+thunar             /last-side-pane                             string  THUNAR_SIDEPANE_TYPE_SHORTCUTS
+thunar             /misc-always-show-tabs                      bool    false
+thunar             /misc-confirm-close-multiple-tabs           bool    false
+thunar             /last-restore-tabs                          bool    false
+thunar             /misc-open-new-window-as-tab                bool    false
+thunar             /last-image-preview-visible                 bool    false
+thunar             /misc-thumbnail-mode                        string  THUNAR_THUMBNAIL_MODE_ONLY_LOCAL
+thunar             /misc-thumbnail-max-file-size               uint64  104857600
+thunar             /misc-thumbnail-draw-frames                 bool    false
+thunar             /misc-confirm-move-to-trash                 bool    false
+thunar             /misc-show-delete-action                    bool    false
+thunar             /misc-volume-management                     bool    true
+thunar-volman      /automount-drives/enabled                   bool    true
+thunar-volman      /automount-media/enabled                    bool    true
+thunar-volman      /autoopen/enabled                           bool    false
+thunar-volman      /autobrowse/enabled                         bool    false

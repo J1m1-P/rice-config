@@ -8,8 +8,17 @@ data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 bin_dir="${XDG_BIN_HOME:-$HOME/.local/bin}"
 selectors_dir="$config_home/rice-theme/selectors"
 systemd_user_dir="$config_home/systemd/user"
+thunar_dir="$repo_dir/config/thunar"
+icon_theme_dir="$repo_dir/config/icons/GhostShell"
 errors=0
 missing=0
+install_packages=true
+
+case "${1:-}" in
+    '') ;;
+    --skip-package-install) install_packages=false ;;
+    *) printf 'Usage: %s [--skip-package-install]\n' "$0" >&2; exit 2 ;;
+esac
 
 ok() { printf 'OK       %s\n' "$*"; }
 warn() { printf 'WARNING  %s\n' "$*" >&2; }
@@ -230,7 +239,311 @@ check_command() {
     fi
 }
 
+package_installed() {
+    [[ "$(dpkg-query -W -f='${db:Status-Abbrev}' "$1" 2>/dev/null)" == ii* ]]
+}
+
+install_file_manager_packages() {
+    local package
+    local -a required_packages=(
+        thunar thunar-archive-plugin thunar-volman tumbler
+        gvfs gvfs-backends gvfs-fuse libmtp-runtime udisks2
+        file-roller 7zip kitty desktop-file-utils xdg-user-dirs xdg-utils
+        xfconf libglib2.0-bin python3 adwaita-icon-theme
+    )
+    local -a missing_packages=()
+
+    if ! command -v dpkg-query >/dev/null 2>&1 || ! command -v apt-get >/dev/null 2>&1; then
+        fail 'automatic file-manager package installation requires Ubuntu/Debian apt and dpkg'
+        return
+    fi
+    for package in "${required_packages[@]}"; do
+        package_installed "$package" || missing_packages+=("$package")
+    done
+    if (( ${#missing_packages[@]} == 0 )); then
+        ok 'file-manager packages already installed'
+        return
+    fi
+
+    printf 'Installing missing file-manager packages: %s\n' "${missing_packages[*]}"
+    if (( EUID == 0 )); then
+        apt-get install -y -- "${missing_packages[@]}" || fail 'could not install file-manager packages'
+    elif command -v sudo >/dev/null 2>&1; then
+        sudo apt-get install -y -- "${missing_packages[@]}" || fail 'could not install file-manager packages'
+    else
+        fail "missing file-manager packages and sudo is unavailable: ${missing_packages[*]}"
+    fi
+}
+
+apply_thunar_xfconf() {
+    local channel property type value
+    if ! command -v xfconf-query >/dev/null 2>&1; then
+        fail 'cannot apply Thunar settings: xfconf-query is unavailable'
+        return
+    fi
+    while read -r channel property type value; do
+        [[ -n "${channel:-}" && "$channel" != \#* ]] || continue
+        if xfconf-query --channel "$channel" --property "$property" >/dev/null 2>&1; then
+            xfconf-query --channel "$channel" --property "$property" --set "$value" \
+                || fail "could not set $channel:$property"
+        else
+            xfconf-query --channel "$channel" --property "$property" \
+                --create --type "$type" --set "$value" \
+                || fail "could not create $channel:$property"
+        fi
+    done < "$thunar_dir/xfconf.settings"
+    ok 'applied intentional Thunar and volume-manager settings'
+}
+
+merge_thunar_custom_actions() {
+    local destination="$config_home/Thunar/uca.xml"
+    command -v python3 >/dev/null 2>&1 || {
+        fail 'cannot merge Thunar custom actions: python3 is unavailable'
+        return
+    }
+    mkdir -p -- "${destination%/*}"
+    if python3 - "$thunar_dir/uca.xml" "$destination" <<'PY'
+import os
+import sys
+import tempfile
+import xml.etree.ElementTree as ET
+
+managed_path, destination = sys.argv[1:]
+managed_root = ET.parse(managed_path).getroot()
+if os.path.exists(destination):
+    root = ET.parse(destination).getroot()
+else:
+    root = ET.Element("actions")
+
+managed_ids = {
+    action.findtext("unique-id")
+    for action in managed_root.findall("action")
+}
+for action in list(root.findall("action")):
+    action_id = action.findtext("unique-id")
+    command = action.findtext("command", "")
+    description = action.findtext("description", "")
+    legacy_terminal = (
+        action.findtext("name") == "Open Terminal Here"
+        and "exo-open" in command
+        and description == "Example for a custom action"
+    )
+    if action_id in managed_ids or legacy_terminal:
+        root.remove(action)
+
+for action in managed_root.findall("action"):
+    root.append(action)
+
+tree = ET.ElementTree(root)
+ET.indent(tree, space="  ")
+directory = os.path.dirname(destination)
+fd, temporary = tempfile.mkstemp(prefix=".uca.xml.", dir=directory)
+try:
+    with os.fdopen(fd, "wb") as stream:
+        tree.write(stream, encoding="UTF-8", xml_declaration=True)
+    os.replace(temporary, destination)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
+    then
+        ok 'merged managed Thunar custom actions'
+    else
+        fail 'could not merge managed Thunar custom actions'
+    fi
+}
+
+configure_thunar_bookmarks() {
+    local destination="$config_home/gtk-3.0/bookmarks"
+    command -v python3 >/dev/null 2>&1 || {
+        fail 'cannot configure Thunar bookmarks: python3 is unavailable'
+        return
+    }
+    mkdir -p -- "${destination%/*}"
+    if python3 - "$destination" <<'PY'
+import os
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
+
+destination = sys.argv[1]
+
+def user_dir(name):
+    result = subprocess.run(
+        ["xdg-user-dir", name], check=True, capture_output=True, text=True
+    ).stdout.strip()
+    return Path(result).expanduser().resolve().as_uri()
+
+managed = {name: user_dir(name) for name in (
+    "DESKTOP", "DOCUMENTS", "DOWNLOAD", "MUSIC", "PICTURES", "VIDEOS"
+)}
+desired = [managed[name] for name in ("DOCUMENTS", "DOWNLOAD", "PICTURES")]
+existing = []
+if os.path.exists(destination):
+    with open(destination, encoding="utf-8") as stream:
+        existing = [line.rstrip("\n") for line in stream if line.strip()]
+
+managed_uris = set(managed.values())
+unmanaged = [line for line in existing if line.split(" ", 1)[0] not in managed_uris]
+lines = desired + unmanaged
+directory = os.path.dirname(destination)
+fd, temporary = tempfile.mkstemp(prefix=".bookmarks.", dir=directory, text=True)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+        stream.write("\n".join(lines) + ("\n" if lines else ""))
+    os.replace(temporary, destination)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
+    then
+        ok 'configured core Thunar bookmarks; preserved unrelated bookmarks'
+    else
+        fail 'could not configure core Thunar bookmarks'
+    fi
+}
+
+hide_thunar_desktop_shortcut() {
+    command -v python3 >/dev/null 2>&1 || {
+        fail 'cannot hide the Thunar Desktop shortcut: python3 is unavailable'
+        return
+    }
+    if python3 - <<'PY'
+from pathlib import Path
+import subprocess
+
+desktop = subprocess.run(
+    ["xdg-user-dir", "DESKTOP"], check=True, capture_output=True, text=True
+).stdout.strip()
+desktop_uri = Path(desktop).expanduser().resolve().as_uri()
+query = ["xfconf-query", "--channel", "thunar", "--property", "/hidden-bookmarks"]
+current = subprocess.run(query, capture_output=True, text=True)
+values = current.stdout.splitlines() if current.returncode == 0 else []
+if values and values[0].startswith("Value is an array"):
+    values = values[1:]
+values = [value for value in values if value]
+if desktop_uri not in values:
+    values.append(desktop_uri)
+
+command = query.copy()
+if current.returncode != 0:
+    command.append("--create")
+command.append("--force-array")
+for value in values:
+    command.extend(("--type", "string", "--set", value))
+subprocess.run(command, check=True)
+PY
+    then
+        ok 'hid the native Thunar Desktop shortcut; preserved other hidden shortcuts'
+    else
+        fail 'could not hide the native Thunar Desktop shortcut'
+    fi
+}
+
+apply_file_manager_mime_defaults() {
+    local section=false mime desktop
+    if ! command -v xdg-mime >/dev/null 2>&1; then
+        fail 'cannot apply file-manager MIME defaults: xdg-mime is unavailable'
+        return
+    fi
+    while IFS= read -r line; do
+        case "$line" in
+            '[Default Applications]') section=true; continue ;;
+            '['*) section=false; continue ;;
+            ''|'#'*) continue ;;
+        esac
+        "$section" || continue
+        mime="${line%%=*}"
+        desktop="${line#*=}"
+        desktop="${desktop%;}"
+        xdg-mime default "$desktop" "$mime" || fail "could not set MIME default for $mime"
+    done < "$thunar_dir/mimeapps.list"
+    ok 'applied file-manager MIME defaults without replacing unrelated associations'
+}
+
+apply_media_handling_policy() {
+    if ! command -v gsettings >/dev/null 2>&1; then
+        fail 'cannot apply media handling policy: gsettings is unavailable'
+        return
+    fi
+    gsettings set org.gnome.desktop.media-handling automount true \
+        || fail 'could not enable media automount'
+    gsettings set org.gnome.desktop.media-handling automount-open false \
+        || fail 'could not disable opening a window after automount'
+    gsettings set org.gnome.desktop.media-handling autorun-never true \
+        || fail 'could not disable media autorun'
+    ok 'applied safe desktop media handling policy'
+}
+
+apply_gtk_appearance_policy() {
+    if ! command -v gsettings >/dev/null 2>&1; then
+        fail 'cannot apply GTK appearance policy: gsettings is unavailable'
+        return
+    fi
+    gsettings set org.gnome.desktop.interface color-scheme prefer-dark \
+        || fail 'could not enable the dark GTK color scheme'
+    gsettings set org.gnome.desktop.interface icon-theme GhostShell \
+        || fail 'could not select the Ghost Shell icon theme'
+    if gsettings range org.gnome.desktop.interface accent-color >/dev/null 2>&1; then
+        gsettings set org.gnome.desktop.interface accent-color blue \
+            || fail 'could not set the native blue GTK accent'
+    fi
+    if python3 - "$config_home/gtk-3.0/settings.ini" <<'PY'
+import os
+import sys
+import tempfile
+
+destination = sys.argv[1]
+lines = []
+if os.path.exists(destination):
+    with open(destination, encoding="utf-8") as stream:
+        lines = stream.read().splitlines()
+
+section = next((index for index, line in enumerate(lines) if line.strip() == "[Settings]"), None)
+if section is None:
+    if lines and lines[-1]:
+        lines.append("")
+    lines.extend(("[Settings]", "gtk-icon-theme-name=GhostShell"))
+else:
+    end = next(
+        (index for index in range(section + 1, len(lines)) if lines[index].strip().startswith("[")),
+        len(lines),
+    )
+    setting = next(
+        (index for index in range(section + 1, end) if lines[index].split("=", 1)[0].strip() == "gtk-icon-theme-name"),
+        None,
+    )
+    if setting is None:
+        lines.insert(end, "gtk-icon-theme-name=GhostShell")
+    else:
+        lines[setting] = "gtk-icon-theme-name=GhostShell"
+
+directory = os.path.dirname(destination)
+os.makedirs(directory, exist_ok=True)
+fd, temporary = tempfile.mkstemp(prefix=".settings.ini.", dir=directory, text=True)
+try:
+    with os.fdopen(fd, "w", encoding="utf-8") as stream:
+        stream.write("\n".join(lines) + "\n")
+    os.replace(temporary, destination)
+finally:
+    if os.path.exists(temporary):
+        os.unlink(temporary)
+PY
+    then
+        ok 'applied native dark GTK, blue accent, and minimal icon-theme preferences'
+    else
+        fail 'could not apply the GTK 3 icon-theme preference'
+    fi
+}
+
 printf 'Deploying rice-config from %s\n\n' "$repo_dir"
+
+if "$install_packages"; then
+    install_file_manager_packages
+else
+    warn 'skipping file-manager package installation by request'
+fi
 
 ensure_link "$repo_dir/config/hypr" "$config_home/hypr"
 ensure_link "$repo_dir/config/kitty" "$config_home/kitty"
@@ -239,6 +552,8 @@ ensure_link "$repo_dir/config/waybar" "$config_home/waybar"
 ensure_link "$repo_dir/config/swaync" "$config_home/swaync"
 remove_obsolete_managed_link "$repo_dir/config/wlogout" "$config_home/wlogout"
 ensure_link "$repo_dir/config/rice-theme" "$config_home/rice-theme"
+ensure_link "$icon_theme_dir" "$data_home/icons/GhostShell"
+ensure_link "$thunar_dir/tumbler.rc" "$config_home/tumbler/tumbler.rc"
 
 migrate_managed_service_mask waybar.service
 migrate_managed_service_mask swaync.service
@@ -314,6 +629,18 @@ if [[ "$(readlink -f -- "$config_home/rofi" 2>/dev/null)" == "$repo_dir/config/r
     "$config_home/rofi/scripts/system-apps.sh" sync || fail 'could not synchronize System applications'
 fi
 
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database "$data_home/applications" \
+        || fail 'could not refresh the user desktop-entry database'
+fi
+apply_thunar_xfconf
+merge_thunar_custom_actions
+configure_thunar_bookmarks
+hide_thunar_desktop_shortcut
+apply_file_manager_mime_defaults
+apply_media_handling_policy
+apply_gtk_appearance_policy
+
 printf '\nDependency check\n'
 for item in \
     'Hyprland:desktop compositor' 'hyprctl:Hyprland control' 'kitty:terminal' \
@@ -323,7 +650,13 @@ for item in \
     'wiremix:audio control' 'pipewire-pulse:PulseAudio compatibility' 'pw-dump:microphone state' 'wpctl:audio mute control' \
     'powerprofilesctl:power profile control' \
     'swayosd-server:on-screen display' 'swayosd-client:media and hardware keys' \
-    'playerctl:media control' 'brightnessctl:brightness control' 'thunar:file manager' 'jq:JSON processing' \
+    'playerctl:media control' 'brightnessctl:brightness control' 'thunar:file manager' \
+    'file-roller:archive manager' '7z:7z and RAR archive support' 'udisksctl:removable storage' \
+    'loupe:image viewing' 'papers:PDF viewing' 'gnome-text-editor:plain-text editing' \
+    'code:development-file editing' 'mpv:audio and video playback' 'google-chrome:web links' \
+    'xfconf-query:Thunar settings' 'xdg-mime:MIME defaults' 'gsettings:desktop media and appearance settings' \
+    'python3:state-preserving configuration merges' 'update-desktop-database:desktop-entry cache updates' \
+    'jq:JSON processing' \
     'gio:desktop-entry launching' 'hyprshot:screenshots (external)' 'grim:screenshot capture' \
     'slurp:geometry selection' 'wl-copy:clipboard screenshots' 'notify-send:notifications' \
     'xdg-user-dir:pictures directory'; do
@@ -350,6 +683,32 @@ case ":$PATH:" in
 esac
 
 printf '\nValidation\n'
+if command -v python3 >/dev/null 2>&1; then
+    if python3 -c 'import sys, xml.etree.ElementTree as ET; ET.parse(sys.argv[1])' \
+        "$thunar_dir/uca.xml"; then
+        ok 'Thunar custom-action XML'
+    else
+        fail 'Thunar custom-action XML validation failed'
+    fi
+fi
+if awk '
+    NF && $1 !~ /^#/ && NF != 4 { bad=1 }
+    END { exit bad }
+' "$thunar_dir/xfconf.settings"; then
+    ok 'Thunar xfconf declarations'
+else
+    fail 'Thunar xfconf declaration validation failed'
+fi
+if awk '
+    /^\[Default Applications\]$/ { section=1; next }
+    /^\[/ { section=0 }
+    section && NF && $0 !~ /^#/ && $0 !~ /^[^=]+=.+\.desktop$/ { bad=1 }
+    END { exit bad }
+' "$thunar_dir/mimeapps.list"; then
+    ok 'file-manager MIME declarations'
+else
+    fail 'file-manager MIME declaration validation failed'
+fi
 if command -v desktop-file-validate >/dev/null 2>&1; then
     if desktop-file-validate "$repo_dir/config/rofi/hidden-applications.desktop" \
         "$repo_dir/config/rofi/system-applications.desktop"; then

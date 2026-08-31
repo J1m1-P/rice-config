@@ -1,0 +1,12 @@
+[Icon Theme]
+Name=Ghost Shell
+Comment=Minimal Ghost Shell overrides for standard Home and Recent actions
+Inherits=Adwaita,hicolor
+Directories=scalable/actions
+
+[scalable/actions]
+Size=24
+MinSize=16
+MaxSize=256
+Type=Scalable
+Context=Actions

@@ -165,8 +165,22 @@ write_hidden_override() {
     fi
 
     tmp="$(mktemp "$user_apps/.rofi-group.XXXXXX")"
-    printf '[Desktop Entry]\nType=Application\nName=%s\nHidden=true\nX-Rofi-Group=%s\nX-Rofi-Source=%s\nX-Rofi-Icon=%s\n' \
-        "$name" "$app_group" "$launch_source" "$icon" > "$tmp"
+    # Keep the original entry functional for MIME/Open With handling while
+    # NoDisplay removes it from normal application launchers.
+    awk -v group="$app_group" -v source="$launch_source" -v icon="$icon" '
+        /^\[Desktop Entry\]$/ {
+            print
+            print "NoDisplay=true"
+            print "X-Rofi-Group=" group
+            print "X-Rofi-Source=" source
+            print "X-Rofi-Icon=" icon
+            desktop_entry = 1
+            next
+        }
+        /^\[/ { desktop_entry = 0 }
+        desktop_entry && /^(Hidden|NoDisplay|X-Rofi-Group|X-Rofi-Source|X-Rofi-Icon)=/ { next }
+        { print }
+    ' "$launch_source" > "$tmp"
     mv -- "$tmp" "$override"
 }
 
@@ -208,7 +222,7 @@ restore_override() {
     path_file="$state_dir/paths/$id"
 
     [[ -f "$override" ]] || return 0
-    grep -Eq '^(Hidden|X-Rofi-Hidden)=true$' "$override" || return 0
+    grep -Eq '^(Hidden|X-Rofi-Hidden)=true$|^X-Rofi-Group=' "$override" || return 0
     if [[ -f "$path_file" && ! -f "$backup" ]]; then
         printf 'Cannot restore %s: recovery backup is missing: %s\n' "$id" "$backup" >&2
         return 1
@@ -234,11 +248,13 @@ sync_hidden() {
 
     while IFS= read -r id; do
         override="$user_apps/$id"
-        if grep -Eq '^(Hidden|NoDisplay)=true$' "$override" 2>/dev/null; then
-            repair_backup_source "$id"
-            continue
-        fi
+        source=""
         if [[ -f "$override" ]]; then
+            source="$(desktop_value X-Rofi-Source "$override")"
+        fi
+        if [[ -f "$source" ]]; then
+            repair_backup_source "$id"
+        elif [[ -f "$override" ]]; then
             source="$override"
         else
             source="$(find_original "$id" || true)"

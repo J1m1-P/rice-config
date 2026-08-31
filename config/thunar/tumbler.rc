@@ -1,0 +1,22 @@
+# Keep thumbnailing local and intentionally narrow. Thunar applies the global
+# 100 MiB limit; Tumbler supplies still image and PDF thumbnails.
+[FfmpegThumbnailer]
+Disabled=true
+
+[GstThumbnailer]
+Disabled=true
+
+# Keep the policy limited to still images and PDF documents.
+[FontThumbnailer]
+Disabled=true
+
+[OdfThumbnailer]
+Disabled=true
+
+[EpubThumbnailer]
+Disabled=true
+
+# External desktop thumbnailers duplicate the built-in image/PDF providers and
+# include video generators. Disabling the group keeps the policy deterministic.
+[DesktopThumbnailer]
+Disabled=true

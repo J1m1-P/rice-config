@@ -9,7 +9,10 @@ applications. `UNSURE` entries are intentionally left out of both lists until
 there is a reason to move them.
 
 The lists do not modify package-owned files. Effective hides are represented by
-same-ID user overrides in `~/.local/share/applications/`.
+same-ID user overrides in `~/.local/share/applications/`. Those overrides retain
+the original desktop entry and add `NoDisplay=true`, so applications stay
+available to MIME associations and file-manager **Open With** menus while being
+omitted from normal launchers.
 
 After editing either list manually, apply it with:
 

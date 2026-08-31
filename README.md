@@ -11,6 +11,7 @@ the programs themselves are installed separately.
 - `config/rofi/` — Rofi behavior, themes, application policy, and app-specific helpers.
 - `config/rice-theme/` — desktop theme profiles and the tracked default profile.
 - `config/swaync/` — notification/control-center layout, themes, and service policy.
+- `config/thunar/` — Thunar preferences, thumbnail policy, custom actions, and MIME defaults.
 - `config/waybar/` — Waybar layout, logical module groups, themes, and user service.
 - `scripts/theme-selector/` — desktop and component theme commands.
 - `scripts/` — other helpers deployed through `~/.local/bin/`.
@@ -25,7 +26,10 @@ symlinks. From the clone root, run:
 ```
 
 Existing unrelated destinations are reported as conflicts and are not
-overwritten. The script does not install packages.
+overwritten. On Ubuntu/Debian, setup installs only missing required
+file-manager packages; the remaining desktop software is installed separately.
+Use `./setup.sh --skip-package-install` only when applying configuration without
+root access; missing commands are still reported by validation.
 
 ## Themes
 
@@ -90,6 +94,91 @@ recovery data for pre-existing user entries lives under
 
 Run either gateway directly with `rofi-apps hidden` or `rofi-apps system`.
 
+## File manager
+
+Thunar is the Ghost Shell file manager because it provides a lightweight GTK3
+base with detailed and icon views, tabs, optional split view, native custom
+actions, and GVfs integration. It uses the system Adwaita dark GTK and icon
+foundation; there is no Thunar-specific CSS or copied icon theme. A tiny
+`GhostShell` theme inherits Adwaita and overrides only the standard `go-home`
+and `document-open-recent` icons with restrained `#e8e8e8`/`#728DBE` artwork.
+Because these are standard icon names, the two overrides can also appear in
+other GTK applications; every other icon continues through normal inheritance.
+The native dark color preference and toolkit-provided blue accent are applied
+where supported; the repository does not override toolkit colors to force an
+exact RGB value.
+
+`setup.sh` installs missing Thunar, Tumbler, archive, GVfs, MTP, UDisks, and
+Kitty dependencies. It applies the declarations in
+`config/thunar/xfconf.settings`, merges the native Desktop visibility setting,
+links the narrow Tumbler policy, merges the managed Kitty action into the
+user's existing `Thunar/uca.xml`, and applies MIME defaults one at a time. Existing unrelated
+custom actions, MIME associations, and GTK bookmarks survive. Documents,
+Downloads, and Pictures are the managed core bookmarks; Desktop, Music, and
+Videos are omitted. The native Desktop shortcut is hidden through Thunar's
+`hidden-bookmarks` preference without changing the XDG Desktop directory.
+Other bookmarks and hidden shortcuts remain user-managed.
+
+The default is a compact detailed list with Name, Size, Type, and Modified,
+folders first, name-ascending sorting, hidden files off, breadcrumbs, and a
+small native toolbar. Tabs and `F3` split view remain available but are not the
+default layout. There is no preview pane. Tumbler creates local image and PDF
+still thumbnails up to 100 MiB, including on locally mounted removable media;
+network, video, audio, and arbitrary external thumbnailers are disabled.
+Thumbnail cache and navigation/window history remain runtime state outside Git.
+
+The native Thunar archive plugin uses File Roller with 7-Zip support for ZIP,
+tar archives, 7z, and RAR extraction, and for ZIP or tar.gz creation. Its
+**Extract Here** mode creates an archive-named destination folder, preventing
+loose files from being sprayed into the current directory. If an archive already
+contains the same top-level folder, File Roller may retain that extra nesting;
+the repository accepts the native behavior instead of adding an extraction
+wrapper.
+Thunar 4.20 exposes **Extract Here**, **Extract To...**, and **Create Archive...**
+at the top level; it cannot put extension actions under an `Archive` submenu
+without replacing the native plugin with custom actions.
+
+Thunar's resident daemon and `thunar-volman` automount removable storage without
+opening a window or forcing busy unmounts. GVfs supplies Trash, SFTP, SMB, NAS,
+and MTP browsing. No network location is configured to reconnect at login.
+Device, network, eject, and error presentation remain native to Thunar and
+GVfs/UDisks.
+
+Thunar 4.20 owns the shortcuts model and exposes only Places, Devices, and
+Network groups. Trash remains a fixed Places item and cannot be moved below
+Network through a supported preference. User-added bookmarks likewise remain
+inside Places; there is no native independent Bookmarks header. The repository
+does not fake either layout with dummy entries or CSS.
+
+Default handlers retain the installed Loupe image viewer, Papers PDF viewer,
+GNOME Text Editor for `text/plain`, Visual Studio Code for distinct development
+MIME types, mpv for audio/video, and Google Chrome for web URLs. File Roller is
+the single archive handler. Linux MIME detection classifies both `.txt` and many
+`.conf`/`.ini` files as `text/plain`, so those extensions cannot have different
+defaults without a custom MIME database; **Open With** remains available for
+choosing VS Code.
+
+```text
+Super+F       open Thunar at Home
+Ctrl+H        toggle hidden files
+Ctrl+L        edit/type the current path
+Ctrl+W        close the current tab (or the window on its last tab)
+F2            rename
+F3            toggle split view
+Delete        move to Trash
+Shift+Delete  permanently delete with confirmation
+
+Open Terminal Here
+               open Kitty in the current folder, selected folder,
+               or selected file's parent folder (one selection only)
+```
+
+Repository-managed state is limited to declared preferences, thumbnail policy,
+core bookmarks, the two-icon inherited theme, the Kitty action, MIME defaults,
+dependencies, and daemon startup. GTK/icon packages, thumbnail cache, recent files, mounts, remembered
+network locations, extra bookmarks, and window geometry remain system- or
+user-managed.
+
 ## Software installed separately
 
 Command names describe capabilities; Linux distribution package names can
@@ -100,8 +189,9 @@ differ.
 - Session companions: Hypridle, Hyprlock, Waybar, Sway Notification Center,
   SwayOSD, and the Hyprland polkit agent with its matching QML style module.
 - Configured features: `brightnessctl`, `playerctl` support through SwayOSD,
-  Thunar, JetBrains Mono, DejaVu Sans Mono, and an icon theme providing common
-  symbolic icons.
+  JetBrains Mono, DejaVu Sans Mono, and an icon theme providing common symbolic
+  icons. File-manager packages are the exception: setup installs their missing
+  Ubuntu/Debian dependencies as documented above.
 - Waybar controls: `waycal`, `wlctl`, NetworkManager's `nmtui`, `bluetui`,
   `wiremix`, WirePlumber's `pw-dump` and `wpctl`, Power Profiles Daemon, and
   the Rofi-based power menu. Install waycal separately from its official
@@ -130,8 +220,8 @@ Ubuntu, the polkit agent's `org.hyprland.style` dependency is provided by
 ## Validation
 
 `setup.sh` checks links, important commands, and the Hyprland, Kitty, Rofi,
-Waybar, SwayNC, and desktop-entry configurations where their validators are
-available. Useful manual checks include:
+Thunar, Waybar, SwayNC, and desktop-entry configurations where their validators
+are available. Useful manual checks include:
 
 ```bash
 Hyprland --verify-config --config ~/.config/hypr/hyprland.conf
